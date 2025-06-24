@@ -92,13 +92,13 @@ def readings(moisture_sensors, sht45, light_sensor):
     # Create a dict from the measurements
     measurements = get_sht45_reading(sht45)
     print_sht45_measurements(measurements)
-    point = create_point(measurements)
+    point = create_point(measurements.copy())
     store_influx.write(point)
 
     # Create a dict from the measurements
     measurements = get_as7341_reading(light_sensor)
     print_as7341_measurements(measurements)
-    point = create_point(measurements)
+    point = create_point(measurements.copy())
     store_influx.write(point)
 
     # Iterate over the moisture sensors and get their readings
@@ -112,8 +112,9 @@ def readings(moisture_sensors, sht45, light_sensor):
             "name": moisture_sensor_name,
             "moisture": moisture_reading,
             "temperature": temperature_reading,
+            "status": "connected" if moisture_sensor_value is not None else "disconnected",
         }
-        point = create_point(measurements)
+        point = create_point(measurements.copy())
         print_soil_sensor_measurements(measurements)
 
         store_influx.write(point)

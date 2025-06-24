@@ -58,8 +58,9 @@ def get_sht45_reading(sht45: adafruit_sht4x.SHT4x) -> dict:
     if sht45 is None:
         return {
             "name": "sht45",
-            "temperature": None,
-            "relative_humidity": None,
+            "temperature": -1.,
+            "relative_humidity": -1.,
+            "status": "disconnected",
         }
 
     try:
@@ -68,10 +69,16 @@ def get_sht45_reading(sht45: adafruit_sht4x.SHT4x) -> dict:
             "name": "sht45",
             "temperature": temperature,
             "relative_humidity": relative_humidity,
+            "status": "connected",
         }
     except OSError as e:
         print(f"[OSError] reading from SHT45 sensor: {e}")
-        return {"name": "sht45", "temperature": None, "relative_humidity": None}
+        return {
+            "name": "sht45", 
+            "temperature": -1., 
+            "relative_humidity": -1., 
+            "status": "disconnected",
+        }
 
 
 def get_as7341_reading(light_sensor: AS7341) -> dict:
@@ -79,14 +86,15 @@ def get_as7341_reading(light_sensor: AS7341) -> dict:
     if light_sensor is None:
         return {
             "name": "as7341",
-            "violet": None,
-            "indigo": None,
-            "blue": None,
-            "cyan": None,
-            "green": None,
-            "yellow": None,
-            "orange": None,
-            "red": None,
+            "violet": -1,
+            "indigo": -1,
+            "blue": -1,
+            "cyan": -1,
+            "green": -1,
+            "yellow": -1,
+            "orange": -1,
+            "red": -1,
+            "status": "disconnected",
         }
 
     try:
@@ -101,72 +109,43 @@ def get_as7341_reading(light_sensor: AS7341) -> dict:
             "yellow": light_sensor.channel_590nm,
             "orange": light_sensor.channel_630nm,
             "red": light_sensor.channel_680nm,
+            "status": "connected",
         }
         return measurements
     except OSError as e:
         print(f"Error reading from AS7341 sensor: {e}")
         return {
             "name": "as7341",
-            "violet": None,
-            "indigo": None,
-            "blue": None,
-            "cyan": None,
-            "green": None,
-            "yellow": None,
-            "orange": None,
-            "red": None,
+            "violet": -1,
+            "indigo": -1,
+            "blue": -1,
+            "cyan": -1,
+            "green": -1,
+            "yellow": -1,
+            "orange": -1,
+            "red": -1,
+            "status": "disconnected",
         }
 
 
 def print_sht45_measurements(measurements: dict) -> None:
     """Print the SHT45 temperature and humidity measurements."""
-    temperature_str = (
-        f"{measurements['temperature']:.1f}"
-        if measurements["temperature"] is not None
-        else "None"
-    )
-    humidity_str = (
-        f"{measurements['relative_humidity']:.1f}"
-        if measurements["relative_humidity"] is not None
-        else "None"
-    )
+    temperature_str = f"{measurements['temperature']:.1f}"
+    humidity_str = f"{measurements['relative_humidity']:.1f}"
+
     print(f"SHT45 --> Temperature: {temperature_str} C, Humidity: {humidity_str} %")
 
 
 def print_as7341_measurements(measurements: dict) -> None:
     """Print the AS7341 light sensor measurements."""
-    violet_str = (
-        f"{measurements['violet']:.1f}"
-        if measurements["violet"] is not None
-        else "None"
-    )
-    indigo_str = (
-        f"{measurements['indigo']:.1f}"
-        if measurements["indigo"] is not None
-        else "None"
-    )
-    blue_str = (
-        f"{measurements['blue']:.1f}" if measurements["blue"] is not None else "None"
-    )
-    cyan_str = (
-        f"{measurements['cyan']:.1f}" if measurements["cyan"] is not None else "None"
-    )
-    green_str = (
-        f"{measurements['green']:.1f}" if measurements["green"] is not None else "None"
-    )
-    yellow_str = (
-        f"{measurements['yellow']:.1f}"
-        if measurements["yellow"] is not None
-        else "None"
-    )
-    orange_str = (
-        f"{measurements['orange']:.1f}"
-        if measurements["orange"] is not None
-        else "None"
-    )
-    red_str = (
-        f"{measurements['red']:.1f}" if measurements["red"] is not None else "None"
-    )
+    violet_str = f"{measurements['violet']:.1f}"
+    indigo_str = f"{measurements['indigo']:.1f}"
+    blue_str = f"{measurements['blue']:.1f}"
+    cyan_str =  f"{measurements['cyan']:.1f}"
+    green_str = f"{measurements['green']:.1f}"
+    yellow_str = f"{measurements['yellow']:.1f}"
+    orange_str = f"{measurements['orange']:.1f}"
+    red_str = f"{measurements['red']:.1f}"
 
     print("AS7341 light sensor: 415nm wavelength (Violet)  %s" % violet_str)
     print("AS7341 light sensor: 445nm wavelength (Indigo) %s" % indigo_str)

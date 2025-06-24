@@ -82,10 +82,12 @@ def create_point(measurements: dict) -> Point:
     Returns:
         Point: An InfluxDB Point object with the measurement data.
     """
-    point = Point(measurements["name"])
+    point = Point(measurements.pop("name"))
     for key, value in measurements.items():
-        if key != "name":
+        if key != "status":
             point.field(key, value)
+        else:
+            point.tag(key, value)
     return point
 
 

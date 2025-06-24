@@ -34,7 +34,7 @@ def init_moisture_sensors(tca: adafruit_tca9548a.TCA9548A) -> dict:
 def read_moisture_sensor(moisture_sensor: Seesaw) -> Tuple[Optional[float], Optional[float]]:
     """Get the moisture and temperature readings from a Seesaw moisture sensor."""
     if moisture_sensor is None:
-        return None, None
+        return -1, -1.
 
     try:
         # Read the moisture level
@@ -44,21 +44,13 @@ def read_moisture_sensor(moisture_sensor: Seesaw) -> Tuple[Optional[float], Opti
         return moisture, temperature
     except OSError as e:
         print(f"[OSError] reading from moisture sensor: {e}")
-        return None, None
+        return -1, -1.
 
 
 def print_soil_sensor_measurements(measurements: dict) -> None:
     """Print the soil sensor measurements."""
-    moisture_str = (
-        f"{measurements['moisture']:.1f}"
-        if measurements["moisture"] is not None
-        else "None"
-    )
-    temperature_str = (
-        f"{measurements['temperature']:.1f} C"
-        if measurements["temperature"] is not None
-        else "None"
-    )
+    moisture_str = f"{measurements['moisture']:.1f}"
+    temperature_str = f"{measurements['temperature']:.1f}"
     print(
         f"{measurements['name']} --> Moisture: {moisture_str}, Temperature: {temperature_str} C"
     )
