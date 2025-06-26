@@ -1,44 +1,15 @@
 import adafruit_sht4x
 import adafruit_tca9548a
 from adafruit_as7341 import AS7341
+import time
 
 from config import (
     precision_map,
     get_sht45_port,
     get_sht45_mode,
     get_as7341_port,
+    get_reinit_timeout,
 )
-
-
-def init_sht45(tca: adafruit_tca9548a.TCA9548A) -> adafruit_sht4x.SHT4x:
-    """Initialize the SHT45 temperature and humidity sensor."""
-
-    # Get the port for the SHT45 sensor
-    port_sht45 = get_sht45_port()
-
-    # Get the mode string for the SHT45 sensor
-    mode_str_sht45 = get_sht45_mode()
-
-    try:
-        # SHT45 is a temperature and humidity sensor
-        sht45 = adafruit_sht4x.SHT4x(tca[port_sht45])
-
-        if mode_str_sht45 in precision_map:
-            # Set the sensor mode based on the string value
-            mode_value = precision_map[mode_str_sht45]
-            sht45.mode = mode_value
-        else:
-            raise ValueError(f"Invalid mode string: {mode_str_sht45}")
-
-        # Can also set the mode to enable heater
-        # sht45.mode = adafruit_sht4x.Mode.LOWHEAT_100MS
-        print("Current mode for SHT45 is: ", adafruit_sht4x.Mode.string[sht45.mode])
-
-        return sht45
-    except ValueError as e:
-        print(f"[ValueError] initializing SHT45 sensor: {e}")
-        return None
-
 
 def init_as7341(tca: adafruit_tca9548a.TCA9548A) -> AS7341:
     """Initialize the AS7341 light sensor."""
@@ -114,6 +85,7 @@ def get_as7341_reading(light_sensor: AS7341) -> dict:
         return measurements
     except OSError as e:
         print(f"Error reading from AS7341 sensor: {e}")
+        value = retinit_as7341(light_sensor)  # Reinitialize the sensor if there's an error
         return {
             "name": "as7341",
             "violet": -1,
@@ -127,6 +99,61 @@ def get_as7341_reading(light_sensor: AS7341) -> dict:
             "status": "disconnected",
         }
 
+def init_sht45(tca: adafruit_tca9548a.TCA9548A) -> adafruit_sht4x.SHT4x:
+    """Initialize the SHT45 temperature and humidity sensor."""
+
+    # Get the port for the SHT45 sensor
+    port_sht45 = get_sht45_port()
+
+    # Get the mode string for the SHT45 sensor
+    mode_str_sht45 = get_sht45_mode()
+
+    try:
+        # SHT45 is a temperature and humidity sensor
+        sht45 = adafruit_sht4x.SHT4x(tca[port_sht45])
+
+        if mode_str_sht45 in precision_map:
+            # Set the sensor mode based on the string value
+            mode_value = precision_map[mode_str_sht45]
+            sht45.mode = mode_value
+        else:
+            raise ValueError(f"Invalid mode string: {mode_str_sht45}")
+
+        # Can also set the mode to enable heater
+        # sht45.mode = adafruit_sht4x.Mode.LOWHEAT_100MS
+        print("Current mode for SHT45 is: ", adafruit_sht4x.Mode.string[sht45.mode])
+
+        return sht45
+    except ValueError as e:
+        print(f"[ValueError] initializing SHT45 sensor: {e}")
+        return None
+
+def read_sht45(sht45: adafruit_sht4x.SHT4x) -> dict:
+    """Get the temperature and humidity readings from the SHT45 sensor."""
+    if sht45 is None:
+        return {
+            "name": "sht45",
+            "temperature": -1.,
+            "relative_humidity": -1.,
+            "status": "disconnected",
+        }
+
+    try:
+        temperature, relative_humidity = sht45.measurements
+        return {
+            "name": "sht45",
+            "temperature": temperature,
+            "relative_humidity": relative_humidity,
+            "status": "connected",
+        }
+    except OSError as e:
+        print(f"[OSError] reading from SHT45 sensor: {e}")
+        return {
+            "name": "sht45", 
+            "temperature": -1., 
+            "relative_humidity": -1., 
+            "status": "disconnected",
+        }
 
 def print_sht45_measurements(measurements: dict) -> None:
     """Print the SHT45 temperature and humidity measurements."""
