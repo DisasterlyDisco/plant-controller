@@ -22,37 +22,22 @@ def init_as7341(tca: adafruit_tca9548a.TCA9548A) -> AS7341:
     except ValueError as e:
         print(f"[ValueError] initializing AS7341 sensor: {e}")
         return None
+    
+timeout_seconds = get_reinit_timeout()
+    
+def init_read_as7341(tca: adafruit_tca9548a.TCA9548A) -> callable: 
+    """Return a closure that checks for a timeout and raises TimeoutError."""
+    last_time = [time.monotonic()]  # Mutable container to allow updates
 
+    def check_timeout() -> None:
+        current_time = time.monotonic()
+        if current_time - last_time[0] > timeout_seconds:
+            last_time[0] = current_time  # Reset timer after timeout
+            return init_as7341
 
-def get_sht45_reading(sht45: adafruit_sht4x.SHT4x) -> dict:
-    """Get the temperature and humidity readings from the SHT45 sensor."""
-    if sht45 is None:
-        return {
-            "name": "sht45",
-            "temperature": -1.,
-            "relative_humidity": -1.,
-            "status": "disconnected",
-        }
+    return check_timeout
 
-    try:
-        temperature, relative_humidity = sht45.measurements
-        return {
-            "name": "sht45",
-            "temperature": temperature,
-            "relative_humidity": relative_humidity,
-            "status": "connected",
-        }
-    except OSError as e:
-        print(f"[OSError] reading from SHT45 sensor: {e}")
-        return {
-            "name": "sht45", 
-            "temperature": -1., 
-            "relative_humidity": -1., 
-            "status": "disconnected",
-        }
-
-
-def get_as7341_reading(light_sensor: AS7341) -> dict:
+def read_as7341(light_sensor: AS7341) -> dict: #reutrns a tuple with dict and valid reaing.
     """Get the light sensor readings from the AS7341 sensor."""
     if light_sensor is None:
         return {

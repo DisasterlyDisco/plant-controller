@@ -33,6 +33,7 @@ plant:
     as7341:
       port: 7
     sampling_period: 60
+    reinit_timeout_seconds: 1800.0
   actuators:
     pump_1:
       relay: one

@@ -137,12 +137,16 @@ def get_pump_config(pump_id: str) -> dict:
     raise ValueError(f"No configuration found for pump_id: {pump_id}")
 
 
-# get moisture sensors nested dict. To iterate over in controller-1.py
-
-
 def get_moisture_sensors() -> dict:
     """
     Returns the configuration for all moisture sensors.
     """
     config = get_config()
     return config["plant"]["sensors"]["seesaw"]
+
+def get_reinit_timeout() -> float:
+    """
+    Returns the timeout value for reinitializing sensors.
+    """
+    config = get_config()
+    return config["plant"]["sensors"]["reinit_timeout_seconds"]
