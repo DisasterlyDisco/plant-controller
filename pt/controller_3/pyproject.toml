@@ -1,0 +1,15 @@
+[project]
+name = "plant_controller"
+description = "Controller software for monitoring and watering of plants, designed with digital twins of the plants in mind."
+version = "3.0.0"
+requires-python = ">=3.13"
+authors = [
+    {name = "Aleksander Ross Møller", email = "aleksander.r.m@protonmail.com"}
+]
+maintainers = [
+    {name = "Aleksander Ross Møller", email = "aleksander.r.m@protonmail.com"}
+]
+readme = "../../README.md"
+license = "INTO-CPS Association Public License"
+license-files = ["LICENSE.md", "ACKNOWLEDGEMENTS.md"]
+keywords = ["plant", "plants", "greenhouse", "botany", "agriculture", "digital twin" "digital twins", "Digital Twin", "Digital Twins"]
