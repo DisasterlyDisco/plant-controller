@@ -19,11 +19,13 @@ class DatabaseClient(InfluxDBClient3):
              .field("confidence", str(datapoint.confidence))
              .field("units", datapoint.units)
         )
-    
-    def read_all(
+
+    def read_measurements(
         self,
         physical_unit: str,
-        parameter: str   
+        parameter: str,
+        limit: int = None,
+        since_timestamp: str = None
     ):
         return self.query(
             f'SELECT * FROM '
@@ -31,6 +33,9 @@ class DatabaseClient(InfluxDBClient3):
                 physical_unit,
                 parameter
             )
+            + (f' WHERE time > {since_timestamp}' if since_timestamp else '')
+            + f' ORDER BY time DESC'
+            + (f' LIMIT {limit}' if limit else '')
         ).to_pandas()
 
 class Database:
