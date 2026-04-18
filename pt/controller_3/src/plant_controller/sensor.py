@@ -49,7 +49,7 @@ class DummyUnit:
     
     async def db_save_function(self, datapoint: Datapoint):
         async with self.db_lock:
-            await self.db_client.write_measurement(self.name, datapoint)
+            self.db_client.write_measurement(self.name, datapoint)
 
     def register_sensor(self, parameter: str, bus: DummyBus):
         self.sensors.append(DummySensor(parameter, bus, self.db_save_function))
