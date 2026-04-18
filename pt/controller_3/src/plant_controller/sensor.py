@@ -15,13 +15,16 @@ class DummyBus:
             await anyio.sleep(0.1)
             return random.uniform(0, 100)
 class DummySensor:
-    def __init__(self, parameter: str, bus: DummyBus, db_save_function: callable):
+    def __init__(self, parameter: str, bus: DummyBus, db_save_function: callable | None = None):
         self.parameter = parameter
         self.bus = bus
         self.db_save_function = db_save_function
         self.confidence = Confidence(interval=0.5, level=0.95)
         self.units = "%" if parameter == "humidity" else "°C" if parameter == "temperature" else "lux"
         self.time_between_reads = random.uniform(0.5, 1.5)
+
+    def register_db_save_function(self, db_save_function: callable):
+        self.db_save_function = db_save_function
 
     async def read(self):
         value = await self.bus.query(f"Read {self.parameter}")
