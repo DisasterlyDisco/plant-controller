@@ -2,17 +2,19 @@ import uvicorn
 from fastapi import FastAPI, APIRouter, Query
 from fastapi.responses import JSONResponse
 from pandas import DataFrame
+from anyio import Lock, to_thread
 
-from .database import Database
+from .database import DatabaseClient
 
 from typing import Dict, Any, Annotated
 from datetime import datetime
 
 class WebAPI:
-    def __init__(self, host: str, port: int, database: Database):
+    def __init__(self, host: str, port: int, db_client: DatabaseClient):
         self.host = host
         self.port = port
-        self.database = database
+        self.db_client = db_client
+        self.db_lock = Lock()
         self.api = FastAPI(
             title="Plant Controller web API",
             description="Fetch measurements, get overviews of plants and capabilities, and update the Controllers watering schedule",
@@ -66,8 +68,8 @@ class WebAPI:
                             "note": "Anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on."
                         }
                     )
-            client = self.database.spawn_client()
-            dataframe = client.read_measurements(unit, parameter, limit, since_timestamp)
+            async with self.db_lock:
+                dataframe = self.db_client.read_measurements(unit, parameter, limit, since_timestamp)
             return dataframe.to_dict(orient="records")
         
         @router.get("/acutators/rocket_silo/nuclear_missile/launch")
@@ -79,10 +81,12 @@ class WebAPI:
 
         self.api.include_router(router)
     
-    def start(self):
-        uvicorn.run(
-            self.api,
-            host=self.host,
-            port=self.port
+    async def start(self):
+        await to_thread.run_sync(
+            uvicorn.run(
+               self.api,
+               host=self.host,
+               port=self.port
+            )  
         )
 

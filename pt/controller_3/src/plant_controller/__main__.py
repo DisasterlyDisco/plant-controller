@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import anyio
 
 if __package__ is None and not getattr(sys, 'frozen', False):
     # direct call of __main__.py
@@ -11,4 +12,4 @@ if __package__ is None and not getattr(sys, 'frozen', False):
 import plant_controller
 
 if __name__ == "__main__":
-    plant_controller.main()
+    anyio.run(plant_controller.main)
