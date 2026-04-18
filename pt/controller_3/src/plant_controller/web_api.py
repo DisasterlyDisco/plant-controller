@@ -57,7 +57,7 @@ class WebAPI:
                         content={
                             "error": f"Invalid timestamp format: {e}",
                             "correct_format": "YYYYMMDD-hhmmss.sssssssss",
-                            "correct_format_example": "20260528-112233.123456789"
+                            "correct_format_example": "20260528-112233.123456789",
                             "note": "Anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on."
                         }
                     )
