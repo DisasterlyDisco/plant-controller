@@ -1,5 +1,7 @@
 from influxdb_client_3 import Point, InfluxDBClient3
 from . import datapoint
+
+from datetime import datetime
     
 class DatabaseClient(InfluxDBClient3):
     def write_measurement(
@@ -24,8 +26,8 @@ class DatabaseClient(InfluxDBClient3):
         self,
         physical_unit: str,
         parameter: str,
-        limit: int = None,
-        since_timestamp: str = None
+        limit: int | None = None,
+        since_timestamp: datetime | None = None
     ):
         return self.query(
             f'SELECT * FROM '
@@ -33,7 +35,7 @@ class DatabaseClient(InfluxDBClient3):
                 physical_unit,
                 parameter
             )
-            + (f' WHERE time > {since_timestamp}' if since_timestamp else '')
+            + (f' WHERE time > {since_timestamp.isoformat(sep=" ")}' if since_timestamp else '')
             + f' ORDER BY time DESC'
             + (f' LIMIT {limit}' if limit else '')
         ).to_pandas()

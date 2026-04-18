@@ -6,6 +6,7 @@ from pandas import DataFrame
 from .database import Database
 
 from typing import Dict, Any, Annotated
+from datetime import datetime
 
 class WebAPI:
     def __init__(self, host: str, port: int, database: Database):
@@ -43,17 +44,28 @@ class WebAPI:
                 )
             ] = None
         ) -> JSONResponse:
-            #if since_timestamp != None:
-            #    try:
-            #        DataFrame([since_timestamp], columns=["timestamp"], dtype="datetime64[ns]")
-            #    except Exception as e:
-            #        return JSONResponse(
-            #            status_code=400,
-            #            content={"error": f"Invalid timestamp format: {e}"}
-            #        )
+            if since_timestamp != None:
+                try:
+                    since_timestamp = datetime.fromisoformat(since_timestamp)
+                except Exception as e:
+                    return JSONResponse(
+                        status_code=400,
+                        content={
+                            "error": f"Invalid timestamp format: {e}",
+                            "correct_format": "YYYYMMDDhhmmss",
+                            "correct_format_example": "20260528112233"
+                        }
+                    )
             client = self.database.spawn_client()
             dataframe = client.read_measurements(unit, parameter, limit, since_timestamp)
             return dataframe.to_dict(orient="records")
+        
+        @router.get("/acutators/rocket_silo/nucelar_missile/launch")
+        async def launch_missile() -> JSONResponse:
+            return JSONResponse(
+                status_code=418,
+                content={"error": "Sorry, but firing nuclear missiles is unconductive to plant care. Please water your plants instead :)"},
+            )
 
         self.api.include_router(router)
     
