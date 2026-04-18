@@ -15,11 +15,11 @@ class WebAPI:
         self.port = port
         self.db_client = db_client
         self.db_lock = Lock()
-        self.api = FastAPI(
+
+        api = FastAPI(
             title="Plant Controller web API",
             description="Fetch measurements, get overviews of plants and capabilities, and update the Controllers watering schedule",
         )
-
         router = APIRouter()
 
         @router.get("/")
@@ -79,14 +79,18 @@ class WebAPI:
                 content={"error": "Sorry, but firing nuclear missiles is not conducive to plant health. Please water your plants instead :)"},
             )
 
-        self.api.include_router(router)
+        api.include_router(router)
+
+        self.server = uvicorn.Server(
+            config=uvicorn.Config(
+                api,
+                host=self.host,
+                port=self.port,
+                log_level="info",
+                loop="anyio"
+            )
+        )
     
     async def start(self):
-        await to_thread.run_sync(
-            uvicorn.run(
-               self.api,
-               host=self.host,
-               port=self.port
-            )  
-        )
+        await self.server.serve()
 
