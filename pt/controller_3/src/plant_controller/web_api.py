@@ -52,8 +52,8 @@ class WebAPI:
                         status_code=400,
                         content={
                             "error": f"Invalid timestamp format: {e}",
-                            "correct_format": "YYYYMMDDhhmmss",
-                            "correct_format_example": "20260528112233"
+                            "correct_format": "YYYYMMDD-hhmmss",
+                            "correct_format_example": "20260528-112233"
                         }
                     )
             client = self.database.spawn_client()
