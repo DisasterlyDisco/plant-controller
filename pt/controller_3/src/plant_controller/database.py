@@ -29,15 +29,13 @@ class DatabaseClient(InfluxDBClient3):
         limit: int | None = None,
         since_timestamp: datetime | None = None
     ):
-        return self.query(
-            f'SELECT * FROM '
-            + Database.format_for_table_name(
+        query = f'SELECT * FROM ' + Database.format_for_table_name(
                 physical_unit,
                 parameter
-            )
-            + (f' WHERE time > {since_timestamp.isoformat(sep="T")}' if since_timestamp else '')
-            + f' ORDER BY time DESC'
-            + (f' LIMIT {limit}' if limit else '')
+            ) + (f' WHERE time > {since_timestamp.isoformat(sep="T")}' if since_timestamp else '') + f' ORDER BY time DESC' + (f' LIMIT {limit}' if limit else '')
+        print(f'Executing query: {query}')
+        return self.query(
+            query
         ).to_pandas()
 
 class Database:
