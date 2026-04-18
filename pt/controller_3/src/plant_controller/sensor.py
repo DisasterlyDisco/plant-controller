@@ -1,7 +1,7 @@
 from abc import ABCMeta
 from anyio import Lock, create_task_group
 from .database import DatabaseClient
-from .datapoint import DataPoint, Confidence
+from .datapoint import Datapoint, Confidence
 
 class DummyBus:
     def __init__(self):
@@ -23,7 +23,7 @@ class DummySensor:
     async def read(self):
         value = await self.bus.query(f"Read {self.parameter}")
         await self.db_save_function(
-            DataPoint(
+            Datapoint(
                 parameter=self.parameter,
                 value=value,
                 confidence=self.confidence,

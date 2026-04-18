@@ -1,3 +1,4 @@
+anyio>=4.13
 influxdb3-python>=0.18
 pandas>=3.0
 fastapi>=0.136
