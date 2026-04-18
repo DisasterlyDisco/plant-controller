@@ -28,7 +28,7 @@ class WebAPI:
             }
         
         @router.get("/sensing/{unit}/{parameter}")
-        async def fetch(
+        async def fetch_measurement(
             unit: str,
             parameter: str,
             limit: Annotated[
@@ -47,6 +47,12 @@ class WebAPI:
                 )
             ] = None
         ) -> JSONResponse:
+            """
+            FEtch measurements for a given physical unit and parameter.
+            
+            Optionally, limit the number of measurements returned and/or
+            only return measurements taken after a certain timestamp.
+            """
             if since_timestamp != None:
                 try:
                     since_timestamp = datetime.fromisoformat(since_timestamp)
