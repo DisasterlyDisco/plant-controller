@@ -44,7 +44,7 @@ class DummyUnit:
         self.db_lock = Lock()
         self.sensors = []
     
-    async def db_save_function(self, datapoint: DataPoint):
+    async def db_save_function(self, datapoint: Datapoint):
         async with self.db_lock:
             await self.db_client.write_measurement(self.name, datapoint)
 
