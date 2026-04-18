@@ -60,7 +60,7 @@ class WebAPI:
             dataframe = client.read_measurements(unit, parameter, limit, since_timestamp)
             return dataframe.to_dict(orient="records")
         
-        @router.get("/acutators/rocket_silo/nucelar_missile/launch")
+        @router.get("/acutators/rocket_silo/nuclear_missile/launch")
         async def launch_missile() -> JSONResponse:
             return JSONResponse(
                 status_code=418,
