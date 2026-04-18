@@ -42,7 +42,7 @@ class WebAPI:
                 str | None,
                 Query(
                     title="Since timestamp",
-                    description="Only return measurements taken after this timestamp. If not provided, all measurements will be returned regardless of timestamp.",
+                    description="Only return measurements taken after this timestamp. If not provided, all measurements will be returned regardless of timestamp. Should be in the format YYYYMMDD-hhmmss.sssssssss, but anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on.",
                     example="20260528-112233.123456789"
                 )
             ] = None
