@@ -43,7 +43,6 @@ class WebAPI:
                 Query(
                     title="Since timestamp",
                     description="Only return measurements taken after this timestamp. If not provided, all measurements will be returned regardless of timestamp.",
-                    pattern="^\\d{8}(-\\d{6}(\\.\\d{1,9})?)?$",
                     example="20260528-112233.123456789"
                 )
             ] = None
