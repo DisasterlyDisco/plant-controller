@@ -35,7 +35,7 @@ class DatabaseClient(InfluxDBClient3):
                 physical_unit,
                 parameter
             )
-            + (f' WHERE time > "{since_timestamp.isoformat(sep=" ")}"' if since_timestamp else '')
+            + (f' WHERE time > {since_timestamp.isoformat(sep="T")}' if since_timestamp else '')
             + f' ORDER BY time DESC'
             + (f' LIMIT {limit}' if limit else '')
         ).to_pandas()
