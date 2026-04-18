@@ -32,7 +32,7 @@ class DatabaseClient(InfluxDBClient3):
         query = f'SELECT * FROM ' + Database.format_for_table_name(
                 physical_unit,
                 parameter
-            ) + (f' WHERE time > {since_timestamp.timestamp()}' if since_timestamp else '') + f' ORDER BY time DESC' + (f' LIMIT {limit}' if limit else '')
+            ) + (f' WHERE time > {int(since_timestamp.timestamp() * 1000000000)}' if since_timestamp else '') + f' ORDER BY time DESC' + (f' LIMIT {limit}' if limit else '')
         print(f'Executing query: {query}')
         return self.query(
             query
