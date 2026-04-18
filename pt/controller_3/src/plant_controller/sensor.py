@@ -3,6 +3,8 @@ from anyio import Lock, create_task_group
 from .database import DatabaseClient
 from .datapoint import Datapoint, Confidence
 
+import random
+
 class DummyBus:
     def __init__(self):
         self.bus_lock = Lock()
