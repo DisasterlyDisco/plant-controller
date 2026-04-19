@@ -18,3 +18,6 @@ class Unit():
     async def db_save_function(self, datapoint: Datapoint):
         async with self.db_lock:
             self.db_client.write_measurement(self.name, datapoint)
+    
+    def get_sensing_capabilites(self):
+        return dict([sensor.get_capabilities() for sensor in self.sensors])

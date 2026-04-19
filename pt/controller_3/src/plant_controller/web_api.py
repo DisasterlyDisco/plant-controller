@@ -10,11 +10,18 @@ from typing import Dict, Any, Annotated
 from datetime import datetime
 
 class WebAPI:
-    def __init__(self, host: str, port: int, db_client: DatabaseClient):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        db_client: DatabaseClient,
+        units_overview: Dict[str, Dict[str, Any]]
+    ):
         self.host = host
         self.port = port
         self.db_client = db_client
         self.db_lock = Lock()
+        self.units_overview = units_overview
 
         api = FastAPI(
             title="Plant Controller web API",
@@ -29,6 +36,19 @@ class WebAPI:
                 "a number": 6
             }
         
+        @router.get("/sensing")
+        async def sensed_units_overview() -> Dict[str, Any]:
+            return {"sensed units": list(self.units_overview)}
+        
+        @router.get("/sensing/{unit}")
+        async def sensed_unit_parameters(unit: str) -> JSONResponse:
+            if unit not in self.units_overview:
+                return JSONResponse(
+                    status_code=404,
+                    content={"error": f"Unit '{unit}' not found. Available units: {list(self.units_overview)}"}
+                )
+            return self.units_overview[unit]
+
         @router.get("/sensing/{unit}/{parameter}")
         async def fetch_measurement(
             unit: str,
@@ -55,6 +75,16 @@ class WebAPI:
             Optionally, limit the number of measurements returned and/or
             only return measurements taken after a certain timestamp.
             """
+            if unit not in self.units_overview:
+                return JSONResponse(
+                    status_code=404,
+                    content={"error": f"Unit '{unit}' not found. Available units: {list(self.units_overview)}"}
+                )
+            if parameter not in self.units_overview[unit]:
+                return JSONResponse(
+                    status_code=404,
+                    content={"error": f"Parameter '{parameter}' not found for unit '{unit}'. Available parameters for this unit: {list(self.units_overview[unit])}"}
+                )
             if since_timestamp != None:
                 try:
                     since_timestamp = datetime.fromisoformat(since_timestamp)
@@ -72,7 +102,7 @@ class WebAPI:
                 dataframe = self.db_client.read_measurements(unit, parameter, limit, since_timestamp)
             return dataframe.to_dict(orient="records")
         
-        @router.get("/acutators/rocket_silo/nuclear_missile/launch")
+        @router.get("/actuators/rocket_silo/nuclear_missile/launch")
         async def launch_missile() -> JSONResponse:
             return JSONResponse(
                 status_code=418,

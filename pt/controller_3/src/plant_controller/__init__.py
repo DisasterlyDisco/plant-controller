@@ -1,9 +1,8 @@
-import sys, random
+import sys
 
 import anyio
 
-from . import datapoint, database, web_api
-from .sensor import DummyBus, DummyUnit
+from . import com_bus, database, greenhouse, web_api
 
 async def main():
 
@@ -12,22 +11,34 @@ async def main():
         token=sys.argv[1]
     )
     print("DB Done!")
-    
+
+    print("Setting up units")
+    units = []
+    units.append(
+        greenhouse.Greenhouse(
+            db_client=db.spawn_client(),
+            i2c_bus=com_bus.DummmyI2CBus()
+        )
+    )
+    print("Units done!")
+
+    units_overview = {unit.name: unit.get_sensing_capabilites() for unit in units}
+    print("Units overview:")
+    for unit_name, capabilities in units_overview.items():
+        print(f"  {unit_name}:")
+        for param, info in capabilities.items():
+            print(f"    {param}: {info}")
+
     print("Spinning up web API")
     api = web_api.WebAPI(
         host="0.0.0.0",
         port=8099,
-        db_client=db.spawn_client()
+        db_client=db.spawn_client(),
+        units_overview=units_overview
     )
-
-    print("Setting up greenhouse and sensors")
-    bus = DummyBus()
-    unit = DummyUnit("greenhouse_1", db.spawn_client())
-    unit.register_sensor("temperature", bus)
-    unit.register_sensor("humidity", bus)
-    unit.register_sensor("light", bus)
 
     async with anyio.create_task_group() as tg:
         tg.start_soon(api.start)
-        tg.start_soon(unit.start_sensing)
+        for unit in units:
+            tg.start_soon(unit.start_sensing)
     
