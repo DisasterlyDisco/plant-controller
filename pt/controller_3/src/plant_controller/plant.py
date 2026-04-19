@@ -35,6 +35,6 @@ class Plant(Unit):
             
     @staticmethod
     def parse_config(path: str) -> dict:
-        name = os.path.basename(path)
+        name = os.path.basename(os.path.splitext(path)[0])
         with open(path, "rb") as f:
             return {"name": name, **json.loads(f.read())}
