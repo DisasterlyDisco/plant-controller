@@ -36,20 +36,20 @@ class DummySHT45(Sensor):
         temperature, humidity = random.uniform(0, 100), random.uniform(0, 100)
         self.confidence = self.temperature_confidence
         await self.db_save_function(
-            Datapoint(
-                parameter="temperature",
-                value=temperature,
-                confidence=self.temperature_confidence,
-                units="°C"
-            )
-        )
-        await self.db_save_function(
-            Datapoint(
-                parameter="humidity",
-                value=humidity,
-                confidence=DummySHT45.humidity_confidence(temperature, humidity),
-                units="%"
-            )
+            [
+                Datapoint(
+                    parameter="temperature",
+                    value=temperature,
+                    confidence=self.temperature_confidence,
+                    units="°C"
+                ),
+                Datapoint(
+                    parameter="humidity",
+                    value=humidity,
+                    confidence=DummySHT45.humidity_confidence(temperature, humidity),
+                    units="%"
+                )
+            ]
         )
     
     def get_capabilities(self):

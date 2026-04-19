@@ -1,26 +1,19 @@
-from influxdb_client_3 import Point, InfluxDBClient3
-from . import datapoint
-
 from datetime import datetime
+
+from influxdb_client_3 import Point, InfluxDBClient3
+
+from .datapoint import Datapoint
     
 class DatabaseClient(InfluxDBClient3):
-    def write_measurement(
+    def write_measurements(
         self,
         physical_unit: str,
-        datapoint: datapoint.Datapoint
+        data: Datapoint | list[Datapoint]
     ):
-        self.write(
-            Point(
-                Database.format_for_table_name(
-                    physical_unit,
-                    datapoint.parameter
-                )
-            ).tag("physical_unit", physical_unit)
-             .tag("parameter", datapoint.parameter)
-             .field("value", datapoint.value)
-             .field("confidence", str(datapoint.confidence))
-             .field("units", datapoint.units)
-        )
+        if isinstance(data, Datapoint):
+            self.write(DatabaseClient.datapoint_to_point(physical_unit, data))
+        else:
+            self.write([DatabaseClient.datapoint_to_point(physical_unit, dp) for dp in data])
 
     def read_measurements(
         self,
@@ -37,6 +30,19 @@ class DatabaseClient(InfluxDBClient3):
         return self.query(
             query
         ).to_pandas()
+    
+    @staticmethod
+    def datapoint_to_point(self, physical_unit: str, datapoint: Datapoint) -> Point:
+        return Point(
+            Database.format_for_table_name(
+                physical_unit,
+                datapoint.parameter
+            )
+        ).tag("physical_unit", physical_unit
+        ).tag("parameter", datapoint.parameter
+        ).field("value", datapoint.value
+        ).field("confidence", str(datapoint.confidence)
+        ).field("units", datapoint.units)
 
 class Database:
     def __init__(

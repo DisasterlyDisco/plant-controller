@@ -23,9 +23,9 @@ class Unit():
             for sensor in self.sensors:
                 tg.start_soon(sensor.reading_loop)
     
-    async def db_save_function(self, datapoint: Datapoint):
+    async def db_save_function(self, data: Datapoint | list[Datapoint]):
         async with self.db_lock:
-            self.db_client.write_measurement(self.name, datapoint)
+            self.db_client.write_measurements(self.name, data)
     
     def get_sensing_capabilites(self):
         capabilities = {}
