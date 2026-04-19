@@ -9,10 +9,6 @@ _CONFIG_PATH = os.path.join(_IMPL_DIR, "config.toml")
 _PLANTS_DIR = os.path.join(_IMPL_DIR, "plants")
 
 async def main():
-    print("modules in plant_sensor_drivers:")
-    print(plant_sensor_drivers.__dict__)
-    exit(0)
-
     print("Loading config")
     with open(_CONFIG_PATH, "rb") as f:
         config = tomllib.load(f)
