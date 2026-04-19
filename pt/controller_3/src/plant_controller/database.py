@@ -32,7 +32,7 @@ class DatabaseClient(InfluxDBClient3):
         ).to_pandas()
     
     @staticmethod
-    def datapoint_to_point(self, physical_unit: str, datapoint: Datapoint) -> Point:
+    def datapoint_to_point(physical_unit: str, datapoint: Datapoint) -> Point:
         return Point(
             Database.format_for_table_name(
                 physical_unit,
