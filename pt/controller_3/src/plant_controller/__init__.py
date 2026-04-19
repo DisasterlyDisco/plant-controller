@@ -4,9 +4,13 @@ import anyio
 
 from . import com_bus, database, greenhouse, plant, web_api
 
+_IMPL_DIR = "../impl"
+_CONFIG_PATH = os.path.join(_IMPL_DIR, "config.toml")
+_PLANTS_DIR = os.path.join(_IMPL_DIR, "plants")
+
 async def main():
     print("Loading config")
-    with open("../impl/config.toml", "rb") as f:
+    with open(_CONFIG_PATH, "rb") as f:
         config = tomllib.load(f)
 
     print("Setting up DB")
@@ -31,7 +35,12 @@ async def main():
             i2c_bus=busses["i2c"]
         )
     )
-    plant_configs = [plant.Plant.parse_config(f) for f in os.listdir("../impl/plants") if f.endswith(".json")]
+    plant_configs = [
+        plant.Plant.parse_config(os.path.join(_PLANTS_DIR, f))
+        for f
+        in os.listdir(_PLANTS_DIR)
+        if f.endswith(".json")
+    ]
     for config in plant_configs:
         units.append(
             plant.Plant(
