@@ -16,7 +16,7 @@ class DummySHT45(Sensor):
     _I2C_ADDRESS = 0x44
     _READ_COMMAND = 0xFD
 
-    def __init__(self, bus: Bus, db_save_function: callable | None = None):
+    def __init__(self, bus: Bus, db_save_function: callable):
         self.bus = bus
         self.db_save_function = db_save_function
         self.time_between_reads=10
@@ -66,7 +66,7 @@ class DummySHT45(Sensor):
         }
 
 class DummyAS7341(Sensor):
-    def __init__(self, bus: Bus, db_save_function: callable | None = None):
+    def __init__(self, bus: Bus, db_save_function: callable):
         self.bus = bus
         self.db_save_function = db_save_function
         self.time_between_reads = 10
