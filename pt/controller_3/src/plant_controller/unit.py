@@ -20,4 +20,7 @@ class Unit():
             self.db_client.write_measurement(self.name, datapoint)
     
     def get_sensing_capabilites(self):
-        return dict([sensor.get_capabilities() for sensor in self.sensors])
+        capabilities = {}
+        for sensor in self.sensors:
+            capabilities = {**capabilities, **sensor.get_capabilities()}
+        return capabilities
