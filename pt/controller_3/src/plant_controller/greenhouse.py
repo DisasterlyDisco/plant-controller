@@ -9,8 +9,8 @@ from .unit import Unit
 class Greenhouse(Unit):
     def __init__(self, db_client: DatabaseClient, i2c_bus: Bus):
         super().__init__(name="greenhouse", db_client=db_client)
-        self.sensors.append(DummySHT45(bus=i2c_bus, db_save_function=self.db_save_function))
-        self.sensors.append(DummyAS7341(bus=i2c_bus, db_save_function=self.db_save_function))
+        self.register_sensor(DummySHT45(bus=i2c_bus, db_save_function=self.db_save_function))
+        self.register_sensor(DummyAS7341(bus=i2c_bus, db_save_function=self.db_save_function))
 
 class DummySHT45(Sensor):
     _I2C_ADDRESS = 0x44

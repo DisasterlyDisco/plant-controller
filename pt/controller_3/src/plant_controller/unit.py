@@ -10,6 +10,14 @@ class Unit():
         self.db_lock = anyio.Lock()
         self.sensors = []
     
+    def register_sensor(self, new_sensor):
+        for sensor in self.sensors:
+            for parameter in list(sensor.get_capabilities()):
+                if parameter in new_sensor.get_capabilities():
+                    raise ValueError(f"Sensor with parameter '{parameter}' already exists in unit '{self.name}'. Each sensor must have unique parameters. If two sensors have overlapping parameters, consider combining them into a single sensor, or specifying the differences in their parameters.")
+        self.sensors.append(new_sensor)
+
+    
     async def start_sensing(self):
         async with anyio.create_task_group() as tg:
             for sensor in self.sensors:
