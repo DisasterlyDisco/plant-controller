@@ -207,4 +207,5 @@ cython_debug/
 !docs/pt/parts
 
 **/config/*.yaml
+**/config.toml
 

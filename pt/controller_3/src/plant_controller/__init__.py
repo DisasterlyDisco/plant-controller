@@ -1,14 +1,19 @@
-import sys
+import sys, tomllib
 
 import anyio
 
 from . import com_bus, database, greenhouse, web_api
 
 async def main():
+    print("Loading config")
+    with open("config.toml", "rb") as f:
+        config = tomllib.load(f)
 
     print("Setting up DB")
     db = database.Database(
-        token=sys.argv[1]
+        name=config["database"]["name"],
+        host=config["database"]["host"],
+        token=config["database"]["token"]
     )
     print("DB Done!")
 

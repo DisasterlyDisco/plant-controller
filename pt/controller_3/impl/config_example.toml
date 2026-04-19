@@ -1,0 +1,4 @@
+[database]
+name = "plant-controller"
+host = "http://127.0.0.1:8181"
+token = "your-token-here!"
