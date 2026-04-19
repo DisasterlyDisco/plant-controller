@@ -1,8 +1,8 @@
-import sys, tomllib
+import os, tomllib
 
 import anyio
 
-from . import com_bus, database, greenhouse, web_api
+from . import com_bus, database, greenhouse, plant, web_api
 
 async def main():
     print("Loading config")
@@ -17,14 +17,29 @@ async def main():
     )
     print("DB Done!")
 
+    print("Setting up com busses")
+    busses = {
+        "i2c": com_bus.DummmyI2CBus(),
+        "MODBUS": com_bus.DummyMODBUS()
+    }
+
     print("Setting up units")
     units = []
     units.append(
         greenhouse.Greenhouse(
             db_client=db.spawn_client(),
-            i2c_bus=com_bus.DummmyI2CBus()
+            i2c_bus=busses["i2c"]
         )
     )
+    plant_configs = [plant.Plant.parse_config(f) for f in os.listdir("../impl/plants") if f.endswith(".json")]
+    for config in plant_configs:
+        units.append(
+            plant.Plant(
+                config=config,
+                db_client=db.spawn_client(),
+                busses=busses
+            )
+        )
     print("Units done!")
 
     units_overview = {unit.name: unit.get_sensing_capabilites() for unit in units}

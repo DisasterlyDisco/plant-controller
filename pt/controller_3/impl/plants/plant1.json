@@ -1,0 +1,10 @@
+{
+    "sensors": {
+        "moisture": {
+            "class": "dummy_stemma.DummyStemma",
+            "kwargs": {
+                "address": "0x20"
+            }
+        }
+    }
+}
