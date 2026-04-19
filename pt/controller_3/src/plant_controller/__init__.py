@@ -6,7 +6,7 @@ from . import com_bus, database, greenhouse, web_api
 
 async def main():
     print("Loading config")
-    with open("../../impl/config.toml", "rb") as f:
+    with open("../impl/config.toml", "rb") as f:
         config = tomllib.load(f)
 
     print("Setting up DB")
