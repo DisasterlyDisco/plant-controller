@@ -22,6 +22,7 @@ class DummySHT45(Sensor):
         self.time_between_reads=10
         self.temperature_confidence = Confidence(interval=0.2, level=0.95)
     
+    @staticmethod
     def humidity_confidence(temperature, humidity):
         if humidity > 95:
             return Confidence(interval=1.75, level=0.95)
@@ -46,7 +47,7 @@ class DummySHT45(Sensor):
             Datapoint(
                 parameter="humidity",
                 value=humidity,
-                confidence=self.humidity_confidence(temperature, humidity),
+                confidence=DummySHT45.humidity_confidence(temperature, humidity),
                 units="%"
             )
         )
