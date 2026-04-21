@@ -1,4 +1,4 @@
-from .sensors import Sensor
+from . import Sensor
 from ..datapoint import Datapoint, Confidence
 from ..com_bus import Bus
 
