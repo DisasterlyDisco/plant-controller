@@ -8,24 +8,6 @@ import anyio
 from ..com_bus import Bus
 from ..datapoint import Confidence
 
-def init_sensor(
-        module_name: str,
-        class_name: str,
-        parameter: str,
-        busses: dict[str, Bus],
-        db_save_function: Callable[[], None],
-        sensor_kwargs: dict[Any]
-    ) -> Sensor:
-    sensor_module = importlib.import_module("." + module_name)
-    sensor_class = getattr(sensor_module, class_name)
-    return sensor_class(
-        parameter=parameter,
-        bus=busses[sensor_class.bus_type()],
-        db_save_function=db_save_function,
-        **sensor_kwargs
-    )
-
-
 class Sensor(ABC):
     def __init__(
             self,
@@ -69,3 +51,20 @@ class Sensor(ABC):
                 "time between reads": str(self.time_between_reads) + " seconds"
             }
         }
+
+def init_sensor(
+        module_name: str,
+        class_name: str,
+        parameter: str,
+        busses: dict[str, Bus],
+        db_save_function: Callable[[], None],
+        sensor_kwargs: dict[Any]
+    ) -> Sensor:
+    sensor_module = importlib.import_module("." + module_name)
+    sensor_class = getattr(sensor_module, class_name)
+    return sensor_class(
+        parameter=parameter,
+        bus=busses[sensor_class.bus_type()],
+        db_save_function=db_save_function,
+        **sensor_kwargs
+    )
