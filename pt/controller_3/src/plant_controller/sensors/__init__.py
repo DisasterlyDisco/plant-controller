@@ -5,8 +5,8 @@ import importlib
 
 import anyio
 
-from .com_bus import Bus
-from .datapoint import Confidence
+from ..com_bus import Bus
+from ..datapoint import Confidence
 
 def init_sensor(
         module_name: str,
