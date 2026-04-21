@@ -2,11 +2,10 @@ import importlib, json, os
 
 from .com_bus import Bus
 from .database import DatabaseClient
-from .datapoint import Confidence, Datapoint
-from .sensor import Sensor
 from .unit import Unit
+from . import sensors
 
-_PLANT_SENSOR_DRIVERS_PACKAGE = "plant_controller.plant_sensor_drivers"
+#_PLANT_SENSOR_DRIVERS_PACKAGE = "plant_controller.plant_sensor_drivers"
 
 class Plant(Unit):
     def __init__(
@@ -29,9 +28,19 @@ class Plant(Unit):
                 kwargs = sensor_config["kwargs"]
             else:
                 kwargs = {}
-            module = importlib.import_module(f"{_PLANT_SENSOR_DRIVERS_PACKAGE}.{sensor_config['module']}")
-            sensor_class = getattr(module, sensor_config["class"])
-            self.register_sensor(sensor_class(busses=busses, db_save_function=self.db_save_function, **kwargs))
+            self.register_sensor(
+                sensors.init_sensor(
+                    module_name=sensor_config['module'],
+                    class_name=sensor_config["class"],
+                    name=sensor_name,
+                    busses=busses,
+                    db_save_function=self.db_save_function,
+                    sensor_kwargs=kwargs
+                )
+            )
+            #module = importlib.import_module(f"{_PLANT_SENSOR_DRIVERS_PACKAGE}.{sensor_config['module']}")
+            #sensor_class = getattr(module, sensor_config["class"])
+            #self.register_sensor(sensor_class(busses=busses, db_save_function=self.db_save_function, **kwargs))
             
     @staticmethod
     def parse_config(path: str) -> dict:

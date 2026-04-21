@@ -3,7 +3,7 @@ import random
 from .com_bus import Bus
 from .database import DatabaseClient
 from .datapoint import Confidence, Datapoint
-from .sensor import Sensor
+from .sensors import Sensor
 from .unit import Unit
 
 class Greenhouse(Unit):
@@ -52,6 +52,10 @@ class DummySHT45(Sensor):
             ]
         )
     
+    @staticmethod
+    def bus_type() -> str:
+        return "i2c"
+    
     def get_capabilities(self):
         return {
             "temperature": {
@@ -96,6 +100,10 @@ class DummyAS7341(Sensor):
                 units=self.units
             )
         )
+    
+    @staticmethod
+    def bus_type() -> str:
+        return "i2c"
 
     def get_capabilities(self):
         return {

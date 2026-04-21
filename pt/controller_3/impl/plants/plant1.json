@@ -7,5 +7,10 @@
                 "address": "0x20"
             }
         }
+    },
+    "actuators": {
+        "water_pump": {
+            "address": "0x40"
+        }
     }
 }

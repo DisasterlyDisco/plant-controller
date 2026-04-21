@@ -1,4 +1,4 @@
-from ..sensor import Sensor
+from .sensors import Sensor
 from ..datapoint import Datapoint, Confidence
 from ..com_bus import Bus
 
@@ -22,6 +22,10 @@ class DummyStemma(Sensor):
                 units="%"
             )
         )
+
+    @staticmethod
+    def bus_type() -> str:
+        return "i2c"
     
     def get_capabilities(self):
         return {
