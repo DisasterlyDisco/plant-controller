@@ -32,7 +32,7 @@ class Plant(Unit):
                 sensors.init_sensor(
                     module_name=sensor_config['module'],
                     class_name=sensor_config["class"],
-                    name=sensor_name,
+                    parameter=sensor_name,
                     busses=busses,
                     db_save_function=self.db_save_function,
                     sensor_kwargs=kwargs
