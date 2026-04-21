@@ -60,7 +60,7 @@ def init_sensor(
         db_save_function: Callable[[], None],
         sensor_kwargs: dict[Any]
     ) -> Sensor:
-    sensor_module = importlib.import_module("." + module_name)
+    sensor_module = importlib.import_module(__name__ + "." + module_name)
     sensor_class = getattr(sensor_module, class_name)
     return sensor_class(
         parameter=parameter,
