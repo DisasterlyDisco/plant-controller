@@ -29,8 +29,8 @@ class Sensor(ABC):
     async def read(self):
         pass
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def bus_type() -> str:
         """
         Must return the string name of the bustype that this
