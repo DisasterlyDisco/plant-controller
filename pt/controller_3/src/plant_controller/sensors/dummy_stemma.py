@@ -23,7 +23,7 @@ class DummyStemma(Sensor):
         confidence = self.confidence
         await self.db_save_function(
             Datapoint(
-                parameter="moisture",
+                parameter=self.parameter,
                 value=value,
                 confidence=confidence,
                 units="%"
@@ -36,7 +36,7 @@ class DummyStemma(Sensor):
     
     def get_capabilities(self):
         return {
-            "moisture": {
+            self.parameter: {
                 "units": "%",
                 "confidence": str(self.confidence),
                 "time between reads": str(self.time_between_reads) + " seconds"
