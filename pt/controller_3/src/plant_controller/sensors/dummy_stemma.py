@@ -3,8 +3,15 @@ from ..datapoint import Datapoint, Confidence
 from ..com_bus import Bus
 
 class DummyStemma(Sensor):
-    def __init__(self, busses: dict[str, Bus], db_save_function: callable, address: str):
-        self.bus = busses["i2c"]
+    def __init__(
+            self,
+            parameter: str,
+            bus: Bus,
+            db_save_function: callable,
+            address: str
+        ):
+        self.parameter = parameter
+        self.bus = bus
         self.db_save_function = db_save_function
         self.confidence = Confidence(interval=0.5, level=0.95)
         self.address = address
