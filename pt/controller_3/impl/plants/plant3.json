@@ -1,10 +1,19 @@
 {
     "sensors": {
-        "moisture": {
+        "moisture_surface": {
             "module": "dummy_stemma",
             "class": "DummyStemma",
             "kwargs": {
-                "address": "0x22"
+                "address": "0x22",
+                "tbr": 15
+            }
+        },
+        "moisture_roots": {
+            "module": "dummy_stemma",
+            "class": "DummyStemma",
+            "kwargs": {
+                "address": "0x23",
+                "tbr": 25
             }
         }
     },

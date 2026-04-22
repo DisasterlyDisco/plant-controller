@@ -4,7 +4,8 @@
             "module": "dummy_stemma",
             "class": "DummyStemma",
             "kwargs": {
-                "address": "0x20"
+                "address": "0x20",
+                "tbr": 10
             }
         }
     },

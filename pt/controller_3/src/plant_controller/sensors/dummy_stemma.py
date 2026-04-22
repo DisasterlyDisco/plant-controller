@@ -8,14 +8,15 @@ class DummyStemma(Sensor):
             parameter: str,
             bus: Bus,
             db_save_function: callable,
-            address: str
+            address: str,
+            tbr: int
         ):
         self.parameter = parameter
         self.bus = bus
         self.db_save_function = db_save_function
         self.confidence = Confidence(interval=0.5, level=0.95)
         self.address = address
-        self.time_between_reads = 15
+        self.time_between_reads = tbr
     
     async def read(self):
         _dummy = await self.bus.query(self.address, 0x00)
