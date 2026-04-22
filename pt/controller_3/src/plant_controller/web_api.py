@@ -36,6 +36,10 @@ class WebAPI:
                 "a number": 6
             }
         
+        @router.get("/favicon.ico")
+        async def dummy_favicon():
+            return
+        
         @router.get("/sensing")
         async def sensed_units_overview() -> Dict[str, Any]:
             return {"sensed units": list(self.units_overview)}
