@@ -2,7 +2,7 @@ import os, tomllib
 
 import anyio
 
-from . import com_bus, database, greenhouse, plant, plant_sensor_drivers, web_api
+from . import com_bus, database, greenhouse, plant, web_api
 
 _IMPL_DIR = "../impl"
 _CONFIG_PATH = os.path.join(_IMPL_DIR, "config.toml")
