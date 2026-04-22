@@ -1,10 +1,10 @@
 {
     "sensors": {
-        "moisture": {
+        "moisture_matrix": {
             "module": "dummy_stemma",
-            "class": "DummyStemma",
+            "class": "DummyStemmaDugtrio",
             "kwargs": {
-                "address": "0x21",
+                "addresses": ["0x21", "0x24", "0x25", "0x26"],
                 "tbr": 15
             }
         }
