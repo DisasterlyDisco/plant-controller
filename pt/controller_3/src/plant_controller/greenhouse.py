@@ -19,7 +19,7 @@ class DummySHT45(Sensor):
     def __init__(self, bus: Bus, db_save_function: callable):
         self.bus = bus
         self.db_save_function = db_save_function
-        self.time_between_reads=10
+        self.time_between_reads=15
         self.temperature_confidence = Confidence(interval=0.2, level=0.95)
     
     @staticmethod
@@ -74,7 +74,7 @@ class DummyAS7341(Sensor):
     def __init__(self, bus: Bus, db_save_function: callable):
         self.bus = bus
         self.db_save_function = db_save_function
-        self.time_between_reads = 10
+        self.time_between_reads = 15
         self.parameters = [
             "415nm",
             "445nm",
