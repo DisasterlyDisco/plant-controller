@@ -2,8 +2,8 @@
     "type": "daily",
     "schedule": [
         {
-            "time": "16:30:00",
-            "dose": 50
+            "time": "16:40:00",
+            "dose": 40
         },
         {
             "time": "16:40:00",

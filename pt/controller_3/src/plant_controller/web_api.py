@@ -170,7 +170,7 @@ class WebAPI:
                 # so the schedule can be passed on as is.
                 self.actuated_units[unit].update_schedule(schedule.to_dict())
             except ValueError as e:
-                raise HTTPException(status_code=400, detail=f"Schedule wasn't valid: {e}")
+                raise HTTPException(status_code=422, detail=f"Schedule wasn't valid: {e}")
         
         @router.get("/actuation/rocket_silo/nuclear_missile/launch")
         async def launch_missile() -> JSONResponse:

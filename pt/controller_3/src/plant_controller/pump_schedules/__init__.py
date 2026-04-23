@@ -52,6 +52,19 @@ class PumpSchedule(ABC):
         """
         pass
 
+    def validate_schedule_conf(schedule_conf: Any):
+        """
+        Goes through the passed schedule_conf and ensures that it is properly
+        formatted, raising ValueErrors if not.
+
+        If validation is unwanted or irrelevant, then this method can be left
+        unimplemented.
+        
+        :param schedule_conf: Description
+        :type schedule_conf: Any
+        """
+        pass
+
 def parse_schedule(schedule_location: str) -> PumpSchedule:
     with open(schedule_location, "rb") as schedule_file:
         schedule_dict = json.loads(schedule_file.read())
@@ -68,4 +81,24 @@ def validate_schedule(schedule_config: dict[str, Any]):
     :type schedule_config: dict[str, Any]
     :raises: ValueError
     """
-    pass
+    if "type" not in schedule_config:
+        raise ValueError("Schedule must have a 'type' field, indicating type of the schedule and the underlying python module that defines it.")
+    
+    if "schedule" not in schedule_config:
+        raise ValueError("Schedule must contain a value called 'schedule' containing type specefic details on the schedule, for example times and dosages.")
+    
+    if not isinstance(schedule_config["type"], str):
+        raise ValueError("'type' field must be a string, indicating the type of the schedule and the underlying python module that defines it.")
+    
+    try:
+        module_name = __name__ + "." + schedule_config["type"]
+        schedule_module = importlib.import_module(module_name)
+    except Exception as e:
+        raise ValueError(f"Could not load the module {module_name}: {e}")
+    
+    try:
+        schedule_class = getattr(schedule_module, "Schedule")
+    except Exception as e:
+        raise ValueError(f"Could not find the 'Schedule' class inside the schedules types module {module_name}")
+
+    schedule_class.validate_schedule_conf(schedule_config["schedule"])

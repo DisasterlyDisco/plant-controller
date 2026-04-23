@@ -25,6 +25,10 @@ class Schedule(PumpSchedule):
         }
 
     async def run_schedule(self, pump_function: Coroutine[Any, int]):
+        if len(self.schedule_list) < 1:
+            # No scheduled watering events, sleep until the schedule is cancelled
+            await anyio.sleep_forever()
+
         while True:
             sleep_time = None
             today = datetime.date.today()
@@ -53,3 +57,25 @@ class Schedule(PumpSchedule):
             await anyio.sleep(sleep_time)
 
             await pump_function(dose)
+
+    def validate_schedule_conf(schedule_conf: Any):
+        if not isinstance(schedule_conf, list):
+            raise ValueError("A schedule of type 'daily' needs a list of dictionaries containing watering events in the 'schedule' value.")
+        
+        for entry in schedule_conf:
+            if not isinstance(entry, dict):
+                raise ValueError("Each entry in the daily schedules 'schedule' list must be a dictionary.")
+            
+            if "time" not in entry:
+                raise ValueError("Each entry in the daily schedules 'schedule' list must contain a 'time' entry.")
+            
+            try:
+                datetime.time.fromisoformat(entry["time"])
+            except Exception as e:
+                raise ValueError("Each 'time' in each entry in the daily schedules 'schedule' list must be a proper time following the ISO 8601 standard.")
+            
+            if "dose" not in entry:
+                raise ValueError("Each entry in the daily schedules 'schedule' list must contain a 'dose' entry.")
+            
+            if not isinstance(entry["dose"], int):
+                raise ValueError("Each 'dose' in each entry in the daily schedules 'schedule' list must be an integer.")
