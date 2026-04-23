@@ -3,12 +3,6 @@ from collections.abc import Callable
 from typing import Any
 import importlib, json
 
-def parse_schedule(schedule_location: str) -> PumpSchedule:
-    with open(schedule_location, "rb") as schedule_file:
-        schedule_dict = json.loads(schedule_file.read())
-    schedule_module = importlib.import_module("." + schedule_dict["type"])
-    return getattr(schedule_module, "Schedule")(schedule_dict.get("schedule"))
-
 class PumpSchedule(ABC):
     @abstractmethod
     def __init__(self, schedule: Any | None):
@@ -42,3 +36,9 @@ class PumpSchedule(ABC):
         :type pump_function: Callable[[int], None])
         """
         pass
+
+def parse_schedule(schedule_location: str) -> PumpSchedule:
+    with open(schedule_location, "rb") as schedule_file:
+        schedule_dict = json.loads(schedule_file.read())
+    schedule_module = importlib.import_module(__name__ + "." + schedule_dict["type"])
+    return getattr(schedule_module, "Schedule")(schedule_dict.get("schedule"))

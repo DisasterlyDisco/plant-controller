@@ -1,17 +1,19 @@
+from collections.abc import Coroutine
 import math
 import random
 import statistics
+from typing import Any
 
 from . import Sensor
-from ..datapoint import Datapoint, Confidence
-from ..com_bus import Bus
+from ..datapoint import Datapoint, Confidence, Measurement
+from ..com_bus import Bus, I2CInterface
 
-class DummyStemma(Sensor):
+class DummyStemma(Sensor, I2CInterface):
     def __init__(
             self,
             parameter: str,
             bus: Bus,
-            db_save_function: callable,
+            db_save_function: Coroutine[Any, Datapoint | list[Datapoint]],
             address: str,
             tbr: int
         ):
@@ -21,23 +23,19 @@ class DummyStemma(Sensor):
         self.confidence = Confidence(interval=0.5, level=0.95)
         self.address = address
         self.time_between_reads = tbr
-    
+
     async def read(self):
         _dummy = await self.bus.query(self.address, 0x00)
         value = 42
         confidence = self.confidence
         await self.db_save_function(
-            Datapoint(
+            Measurement(
                 parameter=self.parameter,
                 value=value,
                 confidence=confidence,
                 units="%"
             )
         )
-
-    @staticmethod
-    def bus_type() -> str:
-        return "i2c"
     
     def get_capabilities(self):
         return {
@@ -48,12 +46,12 @@ class DummyStemma(Sensor):
             }
         }
     
-class DummyStemmaDugtrio(Sensor):
+class DummyStemmaDugtrio(Sensor, I2CInterface):
     def __init__(
             self,
             parameter: str,
             bus: Bus,
-            db_save_function: callable,
+            db_save_function: Coroutine[Any, Datapoint | list[Datapoint]],
             addresses: list[str],
             tbr: int
         ):
@@ -75,17 +73,13 @@ class DummyStemmaDugtrio(Sensor):
         std_div = statistics.stdev(values)
         conf_int = 2*std_div/math.sqrt(len(values))
         await self.db_save_function(
-            Datapoint(
+            Measurement(
                 parameter=self.parameter,
                 value=mean,
                 confidence=Confidence(conf_int, 0.95),
                 units="%"
             )
         )
-
-    @staticmethod
-    def bus_type() -> str:
-        return "i2c"
     
     def get_capabilities(self):
         return {

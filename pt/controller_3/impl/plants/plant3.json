@@ -19,7 +19,11 @@
     },
     "actuators": {
         "water_pump": {
-            "address": "0x42"
+            "address": "0x42",
+            "calibration": {
+                "slope": 0.1,
+                "offset": 0
+            }
         }
     }
 }

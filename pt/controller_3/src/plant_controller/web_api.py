@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI, APIRouter, Query
 from fastapi.responses import JSONResponse
 from pandas import DataFrame
-from anyio import Lock, to_thread
+from anyio import Lock
 
 from .database import DatabaseClient
 
@@ -74,7 +74,7 @@ class WebAPI:
             ] = None
         ) -> JSONResponse:
             """
-            FEtch measurements for a given physical unit and parameter.
+            Fetch measurements for a given physical unit and parameter.
             
             Optionally, limit the number of measurements returned and/or
             only return measurements taken after a certain timestamp.
@@ -105,6 +105,44 @@ class WebAPI:
             async with self.db_lock:
                 dataframe = self.db_client.read_measurements(unit, parameter, limit, since_timestamp)
             return dataframe.to_dict(orient="records")
+        
+        @router.get("/actuators/{unit}/pump")
+        async def fetch_watering_events(
+            unit: str,
+            limit: Annotated[
+                int | None,
+                Query(
+                    title="Measurement limit",
+                    description="The maximum number of measurements to return. If not provided, all measurements will be returned."
+                )
+            ] = None,
+            since_timestamp: Annotated[
+                str | None,
+                Query(
+                    title="Since timestamp",
+                    description="Only return measurements taken after this timestamp. If not provided, all measurements will be returned regardless of timestamp. Should be in the format YYYYMMDD-hhmmss.sssssssss, but anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on.",
+                    example="20260528-112233.123456789"
+                )
+            ] = None
+        ):
+            if since_timestamp != None:
+                try:
+                    since_timestamp = datetime.fromisoformat(since_timestamp)
+                except Exception as e:
+                    return JSONResponse(
+                        status_code=400,
+                        content={
+                            "error": f"Invalid timestamp format: {e}",
+                            "correct_format": "YYYYMMDD-hhmmss.sssssssss",
+                            "correct_format_example": "20260528-112233.123456789",
+                            "note": "Anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on."
+                        }
+                    )
+            async with self.db_lock:
+                dataframe = self.db_client.read_measurements(unit, "watering", limit, since_timestamp)
+            return dataframe.to_dict(orient="records")
+
+            
         
         @router.get("/actuators/rocket_silo/nuclear_missile/launch")
         async def launch_missile() -> JSONResponse:

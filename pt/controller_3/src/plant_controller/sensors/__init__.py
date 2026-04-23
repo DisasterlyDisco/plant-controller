@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable
+from collections.abc import Coroutine
 from typing import Any
 import importlib
 
 import anyio
 
 from ..com_bus import Bus
-from ..datapoint import Confidence
+from ..datapoint import Confidence, Datapoint
 
 class Sensor(ABC):
     def __init__(
@@ -16,7 +16,7 @@ class Sensor(ABC):
             confidence: Confidence,
             units: str,
             time_between_reads: float,
-            db_save_function: Callable[[], None]
+            db_save_function: Coroutine[Any, Datapoint | list[Datapoint]]
         ):
         self.parameter = parameter
         self.bus = bus
@@ -27,15 +27,6 @@ class Sensor(ABC):
 
     @abstractmethod
     async def read(self):
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def bus_type() -> str:
-        """
-        Must return the string name of the bustype that this
-        sensor uses.
-        """
         pass
     
     async def reading_loop(self):
@@ -57,7 +48,7 @@ def init_sensor(
         class_name: str,
         parameter: str,
         busses: dict[str, Bus],
-        db_save_function: Callable[[], None],
+        db_save_function: Coroutine[Any, Datapoint | list[Datapoint]],
         sensor_kwargs: dict[Any]
     ) -> Sensor:
     sensor_module = importlib.import_module(__name__ + "." + module_name)

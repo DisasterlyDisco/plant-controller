@@ -1,8 +1,10 @@
+from collections.abc import Coroutine
 import random
+from typing import Any
 
-from .com_bus import Bus
+from .com_bus import Bus, I2CInterface
 from .database import DatabaseClient
-from .datapoint import Confidence, Datapoint
+from .datapoint import Confidence, Datapoint, Measurement
 from .sensors import Sensor
 from .unit import Unit
 
@@ -12,11 +14,15 @@ class Greenhouse(Unit):
         self.register_sensor(DummySHT45(bus=i2c_bus, db_save_function=self.db_save_function))
         self.register_sensor(DummyAS7341(bus=i2c_bus, db_save_function=self.db_save_function))
 
-class DummySHT45(Sensor):
+class DummySHT45(Sensor, I2CInterface):
     _I2C_ADDRESS = 0x44
     _READ_COMMAND = 0xFD
 
-    def __init__(self, bus: Bus, db_save_function: callable):
+    def __init__(
+            self,
+            bus: Bus,
+            db_save_function: Coroutine[Any, Datapoint | list[Datapoint]]
+        ):
         self.bus = bus
         self.db_save_function = db_save_function
         self.time_between_reads=15
@@ -37,13 +43,13 @@ class DummySHT45(Sensor):
         self.confidence = self.temperature_confidence
         await self.db_save_function(
             [
-                Datapoint(
+                Measurement(
                     parameter="temperature",
                     value=temperature,
                     confidence=self.temperature_confidence,
                     units="°C"
                 ),
-                Datapoint(
+                Measurement(
                     parameter="humidity",
                     value=humidity,
                     confidence=DummySHT45.humidity_confidence(temperature, humidity),
@@ -51,10 +57,6 @@ class DummySHT45(Sensor):
                 )
             ]
         )
-    
-    @staticmethod
-    def bus_type() -> str:
-        return "i2c"
     
     def get_capabilities(self):
         return {
@@ -70,8 +72,12 @@ class DummySHT45(Sensor):
             }
         }
 
-class DummyAS7341(Sensor):
-    def __init__(self, bus: Bus, db_save_function: callable):
+class DummyAS7341(Sensor, I2CInterface):
+    def __init__(
+            self,
+            bus: Bus,
+            db_save_function: Coroutine[Any, Datapoint | list[Datapoint]]
+        ):
         self.bus = bus
         self.db_save_function = db_save_function
         self.time_between_reads = 15
@@ -93,17 +99,13 @@ class DummyAS7341(Sensor):
         for parameter in self.parameters:
             value = random.uniform(0, 100)
             await self.db_save_function(
-            Datapoint(
+            Measurement(
                 parameter=parameter,
                 value=value,
                 confidence=None,
                 units=self.units
             )
         )
-    
-    @staticmethod
-    def bus_type() -> str:
-        return "i2c"
 
     def get_capabilities(self):
         return {

@@ -4,9 +4,10 @@ import anyio
 
 from . import com_bus, database, greenhouse, plant, web_api
 
-_IMPL_DIR = "../impl"
+_IMPL_DIR = os.path.abspath("../impl")
 _CONFIG_PATH = os.path.join(_IMPL_DIR, "config.toml")
 _PLANTS_DIR = os.path.join(_IMPL_DIR, "plants")
+_SCHEDULES_DIR = os.path.join(_IMPL_DIR, "pump_schedules")
 
 async def main():
     print("Loading config")
@@ -46,7 +47,8 @@ async def main():
             plant.Plant(
                 config=config,
                 db_client=db.spawn_client(),
-                busses=busses
+                busses=busses,
+                schedules_directory=_SCHEDULES_DIR
             )
         )
     print("Units done!")
@@ -70,4 +72,6 @@ async def main():
         tg.start_soon(api.start)
         for unit in units:
             tg.start_soon(unit.start_sensing)
+            if isinstance(unit, plant.Plant):
+                tg.start_soon(unit.start_watering)
     

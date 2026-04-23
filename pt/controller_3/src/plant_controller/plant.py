@@ -2,21 +2,23 @@ import importlib, json, os
 
 from .com_bus import Bus
 from .database import DatabaseClient
+from .pumps.ad20p_1230e import CS_IO404_Based_AD20P_1230E
 from .unit import Unit
-from . import sensors
-
-#_PLANT_SENSOR_DRIVERS_PACKAGE = "plant_controller.plant_sensor_drivers"
+from . import pump_schedules, sensors
 
 class Plant(Unit):
     def __init__(
             self,
             config: dict,
             db_client: DatabaseClient,
-            busses: dict[str, Bus]
+            busses: dict[str, Bus],
+            schedules_directory: str
         ):
         if "name" not in config:
             raise ValueError("Unit config must include a 'name' field.")
+        
         super().__init__(name=config["name"], db_client=db_client)
+
         self.sensors = []
         for sensor_name in config["sensors"]:
             sensor_config = config["sensors"][sensor_name]
@@ -38,10 +40,22 @@ class Plant(Unit):
                     sensor_kwargs=kwargs
                 )
             )
-            #module = importlib.import_module(f"{_PLANT_SENSOR_DRIVERS_PACKAGE}.{sensor_config['module']}")
-            #sensor_class = getattr(module, sensor_config["class"])
-            #self.register_sensor(sensor_class(busses=busses, db_save_function=self.db_save_function, **kwargs))
-            
+
+        pump_config = config["actuators"]["water_pump"]
+
+        self.pump = CS_IO404_Based_AD20P_1230E(
+            address=pump_config["address"],
+            bus=busses[CS_IO404_Based_AD20P_1230E.bus_type()],
+            db_save_function=self.db_save_function,
+            calibration_parameters=pump_config["calibration"]
+        )
+
+        self.schedule_location = os.path.join(schedules_directory, self.name + ".json")
+
+    async def start_watering(self):
+        schedule = pump_schedules.parse_schedule(self.schedule_location)
+        await schedule.run_schedule(self.pump.pumping_callback)
+
     @staticmethod
     def parse_config(path: str) -> dict:
         name = os.path.basename(os.path.splitext(path)[0])
