@@ -17,7 +17,6 @@ class Unit():
                     raise ValueError(f"Sensor with parameter '{parameter}' already exists in unit '{self.name}'. Each sensor must have unique parameters. If two sensors have overlapping parameters, consider combining them into a single sensor, or specifying the differences in their parameters.")
         self.sensors.append(new_sensor)
 
-    
     async def start_sensing(self):
         async with anyio.create_task_group() as tg:
             for sensor in self.sensors:
@@ -32,3 +31,6 @@ class Unit():
         for sensor in self.sensors:
             capabilities = {**capabilities, **sensor.get_capabilities()}
         return capabilities
+    
+    def has_actuation(self) -> bool:
+        return False

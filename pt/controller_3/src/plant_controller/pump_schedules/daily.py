@@ -16,6 +16,13 @@ class Schedule(PumpSchedule):
             ),
             key=lambda event: event[0]
         )
+    
+    def get_schedule(self) -> str  | dict:
+        return {
+            "type": "daily",
+            "description": "Daily watering schedule. The plant is watered each day at the given times.",
+            "schedule": self.schedule_list
+        }
 
     async def run_schedule(self, pump_function: Coroutine[Any, int]):
         while True:

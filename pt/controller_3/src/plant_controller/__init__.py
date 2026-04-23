@@ -53,19 +53,12 @@ async def main():
         )
     print("Units done!")
 
-    units_overview = {unit.name: unit.get_sensing_capabilites() for unit in units}
-    print("Units overview:")
-    for unit_name, capabilities in units_overview.items():
-        print(f"  {unit_name}:")
-        for param, info in capabilities.items():
-            print(f"    {param}: {info}")
-
     print("Spinning up web API")
     api = web_api.WebAPI(
         host="0.0.0.0",
         port=8099,
         db_client=db.spawn_client(),
-        units_overview=units_overview
+        units=units
     )
 
     async with anyio.create_task_group() as tg:

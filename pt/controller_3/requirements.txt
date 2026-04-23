@@ -1,5 +1,6 @@
 anyio>=4.13
 influxdb3-python>=0.18
 pandas>=3.0
+pydantic>=2.13.3
 fastapi>=0.136
 uvicorn[standard]>=0.44

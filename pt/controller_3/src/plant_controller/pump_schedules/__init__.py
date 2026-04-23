@@ -16,6 +16,21 @@ class PumpSchedule(ABC):
         :type schedule: Any | None
         """
         pass
+    
+    @abstractmethod
+    def get_schedule(self) -> str | dict:
+        """
+        Returns a representation of the schedule.
+
+        This should return an overview of the scheduled watering events, or
+        at least explain how the schedule works, so that someone not familiar
+        with the schedules implementation can intuit when watering will happen
+        and how much water will be dosed.
+        
+        :return: The overwiew. If in a dict, expect it to be expressed as a json object
+        :rtype: str | dict
+        """
+        pass
 
     @abstractmethod
     async def run_schedule(self, pump_function: Callable[[int], None]):
@@ -42,3 +57,15 @@ def parse_schedule(schedule_location: str) -> PumpSchedule:
         schedule_dict = json.loads(schedule_file.read())
     schedule_module = importlib.import_module(__name__ + "." + schedule_dict["type"])
     return getattr(schedule_module, "Schedule")(schedule_dict.get("schedule"))
+
+def validate_schedule(schedule_config: dict[str, Any]):
+    """
+    Validates the contents of a schedule config.
+
+    Raises a ValueError incase the schedule is invalid.
+    
+    :param schedule_config: dict describing a Schedule.
+    :type schedule_config: dict[str, Any]
+    :raises: ValueError
+    """
+    pass

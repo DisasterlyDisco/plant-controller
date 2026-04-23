@@ -1,13 +1,24 @@
+from typing import Any, Annotated
+from datetime import datetime
+
 import uvicorn
-from fastapi import FastAPI, APIRouter, Query
+from pydantic import BaseModel
+from fastapi import FastAPI, APIRouter, Query, HTTPException
 from fastapi.responses import JSONResponse
-from pandas import DataFrame
-from anyio import Lock
 
 from .database import DatabaseClient
+from .unit import Unit
+from ._version import __version__
 
-from typing import Dict, Any, Annotated
-from datetime import datetime
+class ScheduleJSON(BaseModel):
+    type: str
+    schedule: Any
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "type": self.type,
+            "schedule": self.schedule
+        }
 
 class WebAPI:
     def __init__(
@@ -15,13 +26,13 @@ class WebAPI:
         host: str,
         port: int,
         db_client: DatabaseClient,
-        units_overview: Dict[str, Dict[str, Any]]
+        units: list[Unit]
     ):
         self.host = host
         self.port = port
         self.db_client = db_client
-        self.db_lock = Lock()
-        self.units_overview = units_overview
+        self.sensed_units = {unit.name: unit for unit in units}
+        self.actuated_units = {unit.name: unit for unit in units if unit.has_actuation()}
 
         api = FastAPI(
             title="Plant Controller web API",
@@ -29,11 +40,35 @@ class WebAPI:
         )
         router = APIRouter()
 
+        def check_unit_in_units(unit: str, units: dict[Unit]):
+            if unit not in units:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Unit '{unit}' not found. Available units: {list(units)}"
+                )
+        
+        def parse_timestamp(timestamp: str) -> datetime:
+            try:
+                return datetime.fromisoformat(timestamp)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "error": f"Invalid timestamp format: {e}",
+                        "correct_format": "YYYYMMDD-hhmmss.sssssssss",
+                        "correct_format_example": "20260528-112233.123456789",
+                        "note": "Anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on."
+                    }
+                )
+
         @router.get("/")
-        async def root() -> Dict[str, Any]:
+        async def root() -> dict[str, Any]:
             return {
-                "welcome": "CONGRATULATIONS - YOU MADE IT :D",
-                "a number": 6
+                "plant-controller": {
+                    "version": __version__,
+                    "current time": datetime.now(),
+                    "api docs endpoint": "/docs"
+                }
             }
         
         @router.get("/favicon.ico")
@@ -41,17 +76,13 @@ class WebAPI:
             return
         
         @router.get("/sensing")
-        async def sensed_units_overview() -> Dict[str, Any]:
-            return {"sensed units": list(self.units_overview)}
+        async def sensed_units_overview() -> dict[str, Any]:
+            return {"sensed units": list(self.sensed_units)}
         
         @router.get("/sensing/{unit}")
         async def sensed_unit_parameters(unit: str) -> JSONResponse:
-            if unit not in self.units_overview:
-                return JSONResponse(
-                    status_code=404,
-                    content={"error": f"Unit '{unit}' not found. Available units: {list(self.units_overview)}"}
-                )
-            return self.units_overview[unit]
+            check_unit_in_units(unit, self.sensed_units)
+            return self.sensed_units[unit].get_sensing_capabilites()
 
         @router.get("/sensing/{unit}/{parameter}")
         async def fetch_measurement(
@@ -79,72 +110,69 @@ class WebAPI:
             Optionally, limit the number of measurements returned and/or
             only return measurements taken after a certain timestamp.
             """
-            if unit not in self.units_overview:
+            check_unit_in_units(unit, self.sensed_units)
+            if parameter not in self.sensed_units[unit].get_sensing_capabilites():
                 return JSONResponse(
                     status_code=404,
-                    content={"error": f"Unit '{unit}' not found. Available units: {list(self.units_overview)}"}
-                )
-            if parameter not in self.units_overview[unit]:
-                return JSONResponse(
-                    status_code=404,
-                    content={"error": f"Parameter '{parameter}' not found for unit '{unit}'. Available parameters for this unit: {list(self.units_overview[unit])}"}
+                    content={"error": f"Parameter '{parameter}' not found for unit '{unit}'. Available parameters for this unit: {list(self.sensed_units[unit].get_sensing_capabilites())}"}
                 )
             if since_timestamp != None:
-                try:
-                    since_timestamp = datetime.fromisoformat(since_timestamp)
-                except Exception as e:
-                    return JSONResponse(
-                        status_code=400,
-                        content={
-                            "error": f"Invalid timestamp format: {e}",
-                            "correct_format": "YYYYMMDD-hhmmss.sssssssss",
-                            "correct_format_example": "20260528-112233.123456789",
-                            "note": "Anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on."
-                        }
-                    )
-            async with self.db_lock:
-                dataframe = self.db_client.read_measurements(unit, parameter, limit, since_timestamp)
-            return dataframe.to_dict(orient="records")
+                since_timestamp = parse_timestamp(since_timestamp)
+            return self.db_client.read_measurements(unit, parameter, limit, since_timestamp).to_dict(orient="records")
         
-        @router.get("/actuators/{unit}/pump")
+        @router.get("/actuation")
+        async def actuated_units_overview() -> dict[str, Any]:
+            return {"actuated units": list(self.actuated_units)}
+        
+        @router.get("/actuation/{unit}")
+        async def actuated_unit_endpoints(unit: str) -> dict[str, Any]:
+            check_unit_in_units(unit, self.actuated_units)
+            return {
+                "Show watering events": f"/actuation/{unit}/watering_events",
+                "Show current watering schedule": f"/actuation/{unit}/show_schedule",
+                "Update watering schedule": f"/actuation/{unit}/update_schedule"
+            }
+
+        @router.get("/actuation/{unit}/watering_events")
         async def fetch_watering_events(
             unit: str,
             limit: Annotated[
                 int | None,
                 Query(
                     title="Measurement limit",
-                    description="The maximum number of measurements to return. If not provided, all measurements will be returned."
+                    description="The maximum number of events to return. If not provided, all events will be returned."
                 )
             ] = None,
             since_timestamp: Annotated[
                 str | None,
                 Query(
                     title="Since timestamp",
-                    description="Only return measurements taken after this timestamp. If not provided, all measurements will be returned regardless of timestamp. Should be in the format YYYYMMDD-hhmmss.sssssssss, but anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on.",
+                    description="Only return events taken after this timestamp. If not provided, all events will be returned regardless of timestamp. Should be in the format YYYYMMDD-hhmmss.sssssssss, but anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on.",
                     example="20260528-112233.123456789"
                 )
             ] = None
         ):
+            check_unit_in_units(unit, self.actuated_units)
             if since_timestamp != None:
-                try:
-                    since_timestamp = datetime.fromisoformat(since_timestamp)
-                except Exception as e:
-                    return JSONResponse(
-                        status_code=400,
-                        content={
-                            "error": f"Invalid timestamp format: {e}",
-                            "correct_format": "YYYYMMDD-hhmmss.sssssssss",
-                            "correct_format_example": "20260528-112233.123456789",
-                            "note": "Anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on."
-                        }
-                    )
-            async with self.db_lock:
-                dataframe = self.db_client.read_measurements(unit, "watering", limit, since_timestamp)
-            return dataframe.to_dict(orient="records")
-
-            
+                since_timestamp = parse_timestamp(since_timestamp)
+            return self.db_client.read_measurements(unit, "watering", limit, since_timestamp).to_dict(orient="records")
         
-        @router.get("/actuators/rocket_silo/nuclear_missile/launch")
+        @router.get("/actuation/{unit}/show_schedule")
+        async def show_watering_schedule(unit: str):
+            check_unit_in_units(unit, self.actuated_units)
+            return self.actuated_units[unit].schedule.get_schedule()
+        
+        @router.put("/actuation/{unit}/update_schedule", status_code=204)
+        async def update_watering_schedule(unit: str, schedule: ScheduleJSON):
+            check_unit_in_units(unit, self.actuated_units)
+            try:
+                # FastAPI implicitly transforms json request bodies into python dictionaries,
+                # so the schedule can be passed on as is.
+                self.actuated_units[unit].update_schedule(schedule.to_dict())
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=f"Schedule wasn't valid: {e}")
+        
+        @router.get("/actuation/rocket_silo/nuclear_missile/launch")
         async def launch_missile() -> JSONResponse:
             return JSONResponse(
                 status_code=418,

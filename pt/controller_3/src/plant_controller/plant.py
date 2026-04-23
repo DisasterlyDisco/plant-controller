@@ -1,4 +1,7 @@
-import importlib, json, os
+import json, os
+from typing import Any
+
+import anyio
 
 from .com_bus import Bus
 from .database import DatabaseClient
@@ -51,10 +54,25 @@ class Plant(Unit):
         )
 
         self.schedule_location = os.path.join(schedules_directory, self.name + ".json")
+        self.schedule = None
+        self.pump_schedule_coroutine_cancel_scope = None
+    
+    def update_schedule(self, schedule: dict[str, Any]):
+        if self.pump_schedule_coroutine_cancel_scope != None:
+            self.pump_schedule_coroutine_cancel_scope.cancel()
+        pump_schedules.validate_schedule(schedule)
+        with open(self.schedule_location, 'w', encoding="utf-8") as schedule_file:
+            schedule_file.write(json.dumps(schedule, indent=4))
 
     async def start_watering(self):
-        schedule = pump_schedules.parse_schedule(self.schedule_location)
-        await schedule.run_schedule(self.pump.pumping_callback)
+        while True:
+            with anyio.CancelScope() as scope:
+                self.pump_schedule_coroutine_cancel_scope = scope
+                self.schedule = pump_schedules.parse_schedule(self.schedule_location)
+                await self.schedule.run_schedule(self.pump.pumping_callback)
+
+    def has_actuation(self) -> bool:
+        return True
 
     @staticmethod
     def parse_config(path: str) -> dict:
