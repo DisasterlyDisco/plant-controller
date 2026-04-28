@@ -1,4 +1,5 @@
-import os, tomllib
+import os
+import tomllib
 
 import anyio
 
@@ -8,6 +9,7 @@ _IMPL_DIR = os.path.abspath("../impl")
 _CONFIG_PATH = os.path.join(_IMPL_DIR, "config.toml")
 _PLANTS_DIR = os.path.join(_IMPL_DIR, "plants")
 _SCHEDULES_DIR = os.path.join(_IMPL_DIR, "pump_schedules")
+
 
 async def main():
     print("Loading config")
@@ -23,10 +25,22 @@ async def main():
     print("DB Done!")
 
     print("Setting up com busses")
-    busses = {
-        "i2c": com_bus.DummmyI2CBus(),
-        "MODBUS": com_bus.DummyMODBUS()
-    }
+    # Check if real MODBUS should be used (configured in config.toml)
+    modbus_config = config.get("modbus", {})
+    use_real_modbus = modbus_config.get("enabled", False)
+
+    if use_real_modbus:
+        print(f"  Using real MODBUS on {modbus_config.get('port', '/dev/ttyUSB0')}")
+        busses = com_bus.busses(
+            use_real_modbus=True,
+            port=modbus_config.get("port", "/dev/ttyUSB0"),
+            baudrate=modbus_config.get("baudrate", 9600),
+            parity=modbus_config.get("parity", "N"),
+            timeout=modbus_config.get("timeout", 1.0)
+        )
+    else:
+        print("  Using dummy busses (set modbus.enabled=true in config for real hardware)")
+        busses = com_bus.busses()
 
     print("Setting up units")
     units = []

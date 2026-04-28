@@ -2,3 +2,30 @@
 name = "plant-controller"
 host = "http://127.0.0.1:8181"
 token = "your-token-here!"
+
+[modbus]
+# Enable real MODBUS RTU communication via CH341 USB-to-RS485
+# Set to true when hardware is connected and driver is loaded
+enabled = false
+
+# Serial port for the CH341 device (usually /dev/ttyUSB0 on Raspberry Pi)
+port = "/dev/ttyUSB0"
+
+# MODBUS RTU communication settings
+baudrate = 9600        # Common: 2400, 4800, 9600, 19200, 38400
+parity = "N"           # N=None, E=Even, O=Odd
+stopbits = 1
+bytesize = 8
+timeout = 1.0          # Read timeout in seconds
+
+# Driver installation (if needed on Raspberry Pi):
+#   sudo apt-get install linux-headers-$(uname -r)
+#   cd documentation/notes/extra_peripherals/usb_to_RS485_module/CH341SER_LINUX/driver
+#   make
+#   sudo insmod ch341.ko
+#   # Or for persistent loading:
+#   sudo cp ch341.ko /lib/modules/$(uname -r)/kernel/drivers/usb/serial/
+#   sudo depmod
+#
+# Verify device is detected:
+#   ls -la /dev/ttyUSB*

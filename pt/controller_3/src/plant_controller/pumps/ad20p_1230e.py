@@ -1,25 +1,17 @@
-import time
-import datetime
+"""
+AD20P-1230E Pump implementation.
 
-from . import Pump
-from ..com_bus import MODBUSInterface
-from ..datapoint import WateringEvent
+This module provides the pump control for AD20P-1230E 12V submersible pumps.
+The CS_IO404_Based_AD20P_1230E class has been moved to cs_io404.py with
+full MODBUS RTU implementation.
 
-class CS_IO404_Based_AD20P_1230E(Pump, MODBUSInterface):
-    async def pumping_callback(self, dosage: int):
-        print(f"PUMPING {dosage} ml!")
-        pumping_time = (
-            dosage
-            * self.calibration_parameters["slope"]
-            + self.calibration_parameters["offset"]
-        )
-        _dummy = await self.bus.query(self.address, 0x00)
+For new implementations, use:
+    from plant_controller.pumps.cs_io404 import CS_IO404Based_AD20P_1230E
 
-        print(f"Gonna be PUMPING for {pumping_time} seconds!")
-        print(f"Starting at {datetime.datetime.now()}")
-        time.sleep(pumping_time)
-        print(f"Ended at {datetime.datetime.now()}")
+This file is kept for backward compatibility.
+"""
 
-        await self.db_save_function(
-            WateringEvent(dosage)
-        )
+# Re-export the implementation from cs_io404.py
+from .cs_io404 import CS_IO404Based_AD20P_1230E as CS_IO404_Based_AD20P_1230E
+
+__all__ = ['CS_IO404_Based_AD20P_1230E']
