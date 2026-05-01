@@ -16,6 +16,7 @@ async def main():
     with open(_CONFIG_PATH, "rb") as f:
         config = tomllib.load(f)
 
+
     print("Setting up DB")
     db = database.Database(
         name=config["database"]["name"],
@@ -23,39 +24,43 @@ async def main():
         token=config["database"]["token"]
     )
     print("DB Done!")
+    
+    #print("Setting up com busses")
+    ## Check if real MODBUS should be used (configured in config.toml)
+    #modbus_config = config.get("modbus", {})
+    #use_real_modbus = modbus_config.get("enabled", False)
+#
+    #if use_real_modbus:
+    #    print(f"  Using real MODBUS on {modbus_config.get('port', '/dev/ttyUSB0')}")
+    #    busses = com_bus.busses(
+    #        use_real_modbus=True,
+    #        port=modbus_config.get("port", "/dev/ttyUSB0"),
+    #        baudrate=modbus_config.get("baudrate", 9600),
+    #        parity=modbus_config.get("parity", "N"),
+    #        timeout=modbus_config.get("timeout", 1.0)
+    #    )
+    #else:
+    #    print("  Using dummy busses (set modbus.enabled=true in config for real hardware)")
+    #    busses = com_bus.busses()
 
-    print("Setting up com busses")
-    # Check if real MODBUS should be used (configured in config.toml)
-    modbus_config = config.get("modbus", {})
-    use_real_modbus = modbus_config.get("enabled", False)
-
-    if use_real_modbus:
-        print(f"  Using real MODBUS on {modbus_config.get('port', '/dev/ttyUSB0')}")
-        busses = com_bus.busses(
-            use_real_modbus=True,
-            port=modbus_config.get("port", "/dev/ttyUSB0"),
-            baudrate=modbus_config.get("baudrate", 9600),
-            parity=modbus_config.get("parity", "N"),
-            timeout=modbus_config.get("timeout", 1.0)
-        )
-    else:
-        print("  Using dummy busses (set modbus.enabled=true in config for real hardware)")
-        busses = com_bus.busses()
-
+    busses = com_bus.busses
+    
     print("Setting up units")
     units = []
     units.append(
         greenhouse.Greenhouse(
             db_client=db.spawn_client(),
-            i2c_bus=busses["i2c"]
+            busses=busses
         )
     )
+    
     plant_configs = [
         plant.Plant.parse_config(os.path.join(_PLANTS_DIR, f))
         for f
         in os.listdir(_PLANTS_DIR)
         if f.endswith(".json")
     ]
+    
     for config in plant_configs:
         units.append(
             plant.Plant(
@@ -66,7 +71,7 @@ async def main():
             )
         )
     print("Units done!")
-
+    
     print("Spinning up web API")
     api = web_api.WebAPI(
         host="0.0.0.0",

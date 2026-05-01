@@ -1,13 +1,12 @@
 """
 Sensor modules for plant monitoring system.
 
-This package provides sensor implementations for various environmental
-measurements including soil conditions and atmospheric parameters.
+Modules in this package should implement the Sensor or SyncSensor abstract base
+classes defined here, which specify the required interface for all sensors in
+the system.
 
-Available sensors:
-    - DummyStemma: Simulated soil moisture sensor (for testing)
-    - DFRobotSoilSensor: RS485/MODBUS soil sensor (temp, humidity, EC)
-    - DFRobotSoilSensorMulti: Multi-parameter soil sensor
+Sensors classes in submodules are dynamically loaded and initialized by the
+controller based on configuration files.
 """
 
 from abc import ABC, abstractmethod
@@ -77,6 +76,22 @@ class Sensor(ABC):
             }
         }
 
+class SyncSensor(Sensor):
+    """
+    Sensor subclass for devices that require synchronous reads (e.g., Blinka-based I2C sensors).
+
+    Inheritors of this class must implement the synced_read method.
+    """
+
+    @abstractmethod
+    def synced_read(self):
+        """Synchronous method to take a measurement."""
+        pass
+
+    async def read(self):
+        """Async wrapper that calls the synchronous read method."""
+        return self.synced_read()
+
 
 def init_sensor(
     module_name: str,
@@ -84,7 +99,7 @@ def init_sensor(
     parameter: str,
     busses: dict[str, Bus],
     db_save_function: Coroutine[Any, Datapoint | list[Datapoint]],
-    sensor_kwargs: dict[Any]
+    sensor_kwargs: dict[Any] = {}
 ) -> Sensor:
     """
     Dynamically initialize a sensor from a module.
@@ -108,14 +123,3 @@ def init_sensor(
         db_save_function=db_save_function,
         **sensor_kwargs
     )
-
-
-# Import implementations for easy access
-from .dfrobot_soil_sensor import DFRobotSoilSensor, DFRobotSoilSensorMulti
-
-__all__ = [
-    'Sensor',
-    'init_sensor',
-    'DFRobotSoilSensor',
-    'DFRobotSoilSensorMulti'
-]

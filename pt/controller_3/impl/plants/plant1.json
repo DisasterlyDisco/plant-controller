@@ -1,10 +1,12 @@
 {
     "sensors": {
         "moisture": {
-            "module": "dummy_stemma",
-            "class": "DummyStemma",
+            "module": "stemma",
+            "class": "MultiplexedStemma",
             "kwargs": {
-                "address": "0x20",
+                "multiplexer_address": 112,
+                "multiplexer_port": 5,
+                "address": 54,
                 "tbr": 10
             }
         }

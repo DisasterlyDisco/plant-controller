@@ -23,13 +23,22 @@ class Datapoint(ABC):
     def format_for_table_name(physical_unit: str, parameter: str) -> str:
         return f'{physical_unit}_{parameter}'.lower()
 
-@dataclass
 class Measurement(Datapoint):
-    parameter: str
-    value: any
-    units: str
-    confidence: None | Confidence = None
-    time: datetime = datetime.now()
+    def __init__(
+        self,
+        parameter: str,
+        value: Any,
+        units: str,
+        confidence: None | Confidence = None,
+        time: None | datetime = None
+    ):
+        self.parameter = parameter
+        self.value = value
+        self.units = units
+        self.confidence = confidence
+        if time is None:
+            time = datetime.now()
+        self.time = time
 
     def to_point(self, unit: str):
         return {
@@ -46,10 +55,14 @@ class Measurement(Datapoint):
             "time": self.time
         }
 
-@dataclass
 class WateringEvent(Datapoint):
-    dosage: int
-    time: datetime = datetime.now()
+    def __init__(
+        self,
+        dosage: int,
+        time: datetime = datetime.now()
+    ):
+        self.dosage = dosage
+        self.time = time
 
     def to_point(self, unit: str):
         return {

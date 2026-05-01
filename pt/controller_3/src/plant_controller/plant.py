@@ -46,12 +46,12 @@ class Plant(Unit):
 
         pump_config = config["actuators"]["water_pump"]
 
-        self.pump = CS_IO404_Based_AD20P_1230E(
-            address=pump_config["address"],
-            bus=busses[CS_IO404_Based_AD20P_1230E.bus_type()],
-            db_save_function=self.db_save_function,
-            calibration_parameters=pump_config["calibration"]
-        )
+        #self.pump = CS_IO404_Based_AD20P_1230E(
+        #    address=pump_config["address"],
+        #    bus=busses[CS_IO404_Based_AD20P_1230E.bus_type()],
+        #    db_save_function=self.db_save_function,
+        #    calibration_parameters=pump_config["calibration"]
+        #)
 
         self.schedule_location = os.path.join(schedules_directory, self.name + ".json")
         self.schedule = None
@@ -66,10 +66,11 @@ class Plant(Unit):
 
     async def start_watering(self):
         while True:
-            with anyio.CancelScope() as scope:
-                self.pump_schedule_coroutine_cancel_scope = scope
-                self.schedule = pump_schedules.parse_schedule(self.schedule_location)
-                await self.schedule.run_schedule(self.pump.pumping_callback)
+            await anyio.sleep_forever()
+        #    with anyio.CancelScope() as scope:
+        #        self.pump_schedule_coroutine_cancel_scope = scope
+        #        self.schedule = pump_schedules.parse_schedule(self.schedule_location)
+        #        await self.schedule.run_schedule(self.pump.pumping_callback)
 
     def has_actuation(self) -> bool:
         return True
