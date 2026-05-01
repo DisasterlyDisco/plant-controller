@@ -13,11 +13,12 @@
     },
     "actuators": {
         "water_pump": {
-            "address": "0x40",
             "calibration": {
                 "slope": 0.1,
                 "offset": 0
-            }
+            },
+            "coil_number": 0,
+            "relay_address": 7
         }
     }
 }

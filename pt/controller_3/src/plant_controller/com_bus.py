@@ -1,7 +1,10 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from abc import ABC, abstractmethod
-import random
 
 import adafruit_tca9548a
+from pymodbus.client import AsyncModbusSerialClient
 
 import anyio
 import board
@@ -13,21 +16,63 @@ class Bus(ABC):
     def __init__(self):
         self.lock = anyio.Lock()
 
-class BlinkaI2CBus:
+class BlinkaI2CBus(Bus):
     def __init__(self):
         self.wrapped_bus = board.I2C()
         self.multiplexers = {}
+        logger.info("Blinka I2C bus initialized")
     
     def ensure_multiplexer(self, address: int) -> adafruit_tca9548a.TCA9548A:
         if address not in self.multiplexers:
             self.multiplexers[address] = adafruit_tca9548a.TCA9548A(self.wrapped_bus, address=address)
+            logger.info(f"Initialized new I2C multiplexer at address {address}")
         return self.multiplexers[address]
 
-class DummyMODBUS(Bus):
-    async def query(self, *args):
-        async with self.lock:
-            await anyio.sleep(0.001)
-            return random.uniform(0, 100)
+class MODBUS(Bus):
+    def __init__(
+        self,
+        port: str = "/dev/ttyUSB0",
+        baudrate: int = 9600,
+        bytesize: int = 8,
+        parity: str = 'N',
+        stopbits: int = 1,
+        timeout: float = 1.0
+    ):
+        super().__init__()
+        self.client = AsyncModbusSerialClient(
+            port=port,
+            baudrate=baudrate,
+            bytesize=bytesize,
+            parity=parity,
+            stopbits=stopbits,
+            timeout=timeout
+        )
+    
+    def __getattr__(self, name):
+        # Proxy all other method calls to the underlying client, but ensure they are called within the lock
+        try:
+            attr = getattr(self.client, name)
+        except AttributeError:
+            raise AttributeError(f"Neither this '{type(self).__name__}' object nor the wrapped '{type(self.client).__name__}' object has any attribute '{name}'")
+        if callable(attr):
+            async def locked_method(*args, **kwargs):
+                async with self.lock:
+                    return await attr(*args, **kwargs)
+            return locked_method
+        else:
+            return attr
+    
+    async def connect(self):
+        try:
+            await self.client.connect()
+            logger.info("Connected to MODBUS client")
+        except Exception as e:
+            logger.error(f"Failed to connect to MODBUS client: {e}")
+            raise e
+
+    def close(self):
+        self.client.close()
+        logger.info("Closed MODBUS client connection")
 
 class BusInterface(ABC):
     @staticmethod
@@ -65,7 +110,11 @@ class MODBUSInterface(BusInterface):
         """
         return _MODBUS
 
-busses = {
-    _I2C: BlinkaI2CBus(),
-    _MODBUS: DummyMODBUS()
-}
+async def busses():
+    i2c_bus = BlinkaI2CBus()
+    modbus = MODBUS()
+    await modbus.connect()
+    return {
+        _I2C: i2c_bus,
+        _MODBUS: modbus
+    }

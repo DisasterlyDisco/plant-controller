@@ -28,8 +28,7 @@ class Pump(ABC):
         self,
         bus: Bus,
         db_save_function: Coroutine[Any, Datapoint | list[Datapoint]],
-        calibration_parameters: dict[str, Any],
-        address: str
+        calibration_parameters: dict[str, Any]
     ):
         """
         Initialize the pump.
@@ -38,12 +37,10 @@ class Pump(ABC):
             bus: Communication bus (I2C or MODBUS)
             db_save_function: Async function to save watering events
             calibration_parameters: Dict with 'slope' (sec/ml) and 'offset' (sec)
-            address: Device address on the bus
         """
         self.bus = bus
         self.db_save_function = db_save_function
         self.calibration_parameters = calibration_parameters
-        self.address = address
 
     @abstractmethod
     async def pumping_callback(self, dosage: int):
@@ -57,14 +54,3 @@ class Pump(ABC):
             dosage: Amount to pump in milliliters
         """
         pass
-
-
-# Import implementations for easy access
-from .cs_io404 import CS_IO404Relay, CS_IO404Pump, CS_IO404Based_AD20P_1230E
-
-__all__ = [
-    'Pump',
-    'CS_IO404Relay',
-    'CS_IO404Pump',
-    'CS_IO404Based_AD20P_1230E'
-]

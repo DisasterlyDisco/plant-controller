@@ -40,7 +40,7 @@ class MultiplexedStemma(Sensor, I2CInterface):
         )
     
     def process_raw_value(self, raw_value):
-        # Current dummy tranformation
+        # Current dummy transformation
         # Replace with actual transform based on calibration data
         return raw_value / 1023 * 100
     

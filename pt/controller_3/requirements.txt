@@ -5,7 +5,6 @@ pydantic>=2.13.3
 fastapi>=0.136
 uvicorn[standard]>=0.44
 pymodbus>=3.6.0
-#pyserial>=3.5
 adafruit-circuitpython-sht4x>=1.0.27
 adafruit-circuitpython-as7341>=1.2.27
 adafruit-circuitpython-tca9548a>=0.8.6

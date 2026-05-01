@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from collections.abc import Coroutine
 from typing import Any
 import datetime
@@ -26,7 +29,7 @@ class Schedule(PumpSchedule):
 
     async def run_schedule(self, pump_function: Coroutine[Any, int]):
         if len(self.schedule_list) < 1:
-            # No scheduled watering events, sleep until the schedule is cancelled
+            logger.warning("No watering events in schedule, skipping watering.")
             await anyio.sleep_forever()
 
         while True:
@@ -51,8 +54,7 @@ class Schedule(PumpSchedule):
                 sleep_time_delta = tomorrows_first_event_datetime - current_time
                 sleep_time = sleep_time_delta.total_seconds()
                 dose = tomorrows_first_event[1]
-            
-            print(f"Scheduled to sleep for {sleep_time_delta}")
+            logger.info(f"Current time is {current_time.isoformat()}. Next watering event is at {event[0].isoformat()} with a dose of {dose} ml. Scheduled to sleep for {sleep_time_delta}.")
         
             await anyio.sleep(sleep_time)
 
