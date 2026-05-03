@@ -39,6 +39,7 @@ class WebAPI:
         api = FastAPI(
             title="Plant Controller web API",
             description="Fetch measurements, get overviews of plants and capabilities, and update the Controllers watering schedule",
+            version=__version__
         )
         router = APIRouter()
 
