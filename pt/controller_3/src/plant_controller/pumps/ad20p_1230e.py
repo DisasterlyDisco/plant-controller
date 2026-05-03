@@ -9,8 +9,9 @@ import anyio
 from . import Pump
 from ..datapoint import Datapoint
 from ..com_bus import MODBUS, MODBUSInterface
+from ..setup_actions import HasSetupFunctionsMixin
 
-class CS_IO404_Based_AD20P_1230E(Pump, MODBUSInterface):
+class CS_IO404_Based_AD20P_1230E(Pump, MODBUSInterface, HasSetupFunctionsMixin):
     def __init__(
         self,
         bus: MODBUS,
@@ -45,3 +46,29 @@ class CS_IO404_Based_AD20P_1230E(Pump, MODBUSInterface):
             device_id=self.relay_address
         )
         logger.info(f"Stopped pump {self.relay_address}-{self.coil_number}")
+    
+    async def calibrate(self):
+        print("CALIBRATION NOT YET IMPLEMENTED")
+        pass
+
+    async def test_pump(self):
+        print("How many ml do you want to pump for the test?")
+        while True:
+            try:
+                dosage = int(input("Enter dosage in ml: "))
+                break
+            except ValueError:
+                print("Invalid input. Please enter an integer value for the dosage.")
+        await self.pumping_callback(dosage)
+
+    def setup_functions(self) -> dict[str, dict[str, any]]:
+        return {
+            "calibrate": {
+                "description": "Run the calibration procedure for the pump.",
+                "function": self.calibrate
+            },
+            "test_pump": {
+                "description": "Test the pump by running it for a short time.",
+                "function": self.test_pump
+            }
+        }

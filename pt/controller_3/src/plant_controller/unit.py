@@ -1,9 +1,11 @@
 import anyio
+import argparse
 
 from .database import DatabaseClient
 from .datapoint import Datapoint
+from .setup_actions import HasSetupFunctionsMixin
 
-class Unit():
+class Unit(HasSetupFunctionsMixin):
     def __init__(self, name: str, db_client: DatabaseClient):
         self.name = name
         self.db_client = db_client

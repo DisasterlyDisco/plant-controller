@@ -80,3 +80,15 @@ class Plant(Unit):
         name = os.path.basename(os.path.splitext(path)[0])
         with open(path, "rb") as f:
             return {"name": name, **json.loads(f.read())}
+
+    def setup_functions(self) -> dict[str, dict[str, Any]]:
+        action_dict = {}
+
+        if hasattr(self.pump, "setup_functions"):
+            action_dict = {**action_dict, **self.pump.setup_functions()}
+
+        for sensor in self.sensors:
+            if hasattr(sensor, "setup_functions"):
+                action_dict = {**action_dict, **sensor.setup_functions()}
+                
+        return action_dict

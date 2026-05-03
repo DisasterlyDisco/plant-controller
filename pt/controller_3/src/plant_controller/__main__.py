@@ -12,4 +12,7 @@ if __package__ is None and not getattr(sys, 'frozen', False):
 import plant_controller
 
 if __name__ == "__main__":
-    anyio.run(plant_controller.main)
+    try:
+        anyio.run(plant_controller.main)
+    except KeyboardInterrupt:
+        print("Goodbye for now!")
