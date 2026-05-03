@@ -1,42 +1,39 @@
 import logging
 import os
+_IMPL_DIR = os.path.expanduser("~/.plant_controller")
+_LOG_PATH = os.path.join(_IMPL_DIR, "log")
+_CONFIG_PATH = os.path.join(_IMPL_DIR, "config.toml")
+_PLANTS_DIR = os.path.join(_IMPL_DIR, "plants")
+_SCHEDULES_DIR = os.path.join(_IMPL_DIR, "pump_schedules")
+
 logger = logging.getLogger(__name__)
+
 logging.basicConfig(
     handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(os.path.expanduser("~/.plant_controller/log"))
+        logging.StreamHandler()
     ],
-    level=logging.WARNING
+    level=logging.WARNING,
 )
-logging.Formatter("%(asctime)s - [%(levelname)s] %(message)s")
 
 import argparse
 import tomllib
 
 import anyio
 
-from . import com_bus, database, greenhouse, plant, unit, web_api
-
-_IMPL_DIR = os.path.abspath("../impl")
-_CONFIG_PATH = os.path.join(_IMPL_DIR, "config.toml")
-_PLANTS_DIR = os.path.join(_IMPL_DIR, "plants")
-_SCHEDULES_DIR = os.path.join(_IMPL_DIR, "pump_schedules")
+from . import _version, com_bus, database, greenhouse, plant, unit, web_api
+from .cli_helpers import clear_screen
 
 async def controller_run(args: argparse.Namespace):
-    config = load_config()
-    db_client = connect_to_db(config)
-    busses = await com_bus.busses()
+    print("Starting plant controller...")
+    units, db_client, busses = await common_startup_tasks()
+
     try:
-        units = create_units(
-            config=config,
-            db_client=db_client,
-            busses=busses
-        )
         api = web_api.WebAPI(
             host="0.0.0.0",
             port=8099,
             db_client=db_client,
-            units=units
+            units=units,
+            log_level=args.log_level
         )
 
         logger.info("Starting main loop")
@@ -46,6 +43,7 @@ async def controller_run(args: argparse.Namespace):
                 tg.start_soon(unit.start_sensing)
                 if isinstance(unit, plant.Plant):
                     tg.start_soon(unit.start_watering)
+            print("Plant controller is now running. Press Ctrl+C to quit.")
     except KeyboardInterrupt:
         logger.info("Got SIGINT, shutting down...")
     except Exception as e:
@@ -54,20 +52,14 @@ async def controller_run(args: argparse.Namespace):
         busses[com_bus._MODBUS].close()
 
 async def controller_setup(args: argparse.Namespace):
-    os.system('cls' if os.name == 'nt' else 'clear')
+    clear_screen()
     print("Welcome to the plant controller setup utility.")
     print("Here you are able to perform different setup actions, depending on the connected units and sensors.")
     print("")
     print("Checking connected units and sensors for setup actions...")
-    config = load_config()
-    db_client = connect_to_db(config)
-    busses = await com_bus.busses()
+    units, _, busses = await common_startup_tasks()
+    
     try:
-        units = create_units(
-            config=config,
-            db_client=db_client,
-            busses=busses
-        )
         setup_actions = {}
         for unit in units:
             unit_setup_functions = unit.setup_functions()
@@ -89,18 +81,18 @@ async def controller_setup(args: argparse.Namespace):
             print("")
             choice = input("Enter the name of the setup action you want to perform: ")
             if choice == "exit":
-                os.system('cls' if os.name == 'nt' else 'clear')
+                clear_screen()
                 print("Exiting setup utility. Goodbye!")
                 break
             if "." in choice:
                 chosen_unit, chosen_action = choice.split(".", 1)
                 if chosen_unit in setup_actions and chosen_action in setup_actions[chosen_unit]:
                     action_info = setup_actions[chosen_unit][chosen_action]
-                    os.system('cls' if os.name == 'nt' else 'clear')
+                    clear_screen()
                     print(f"Performing setup action '{choice}'...")
                     await action_info["function"]()
                     continue
-            os.system('cls' if os.name == 'nt' else 'clear')
+            clear_screen()
             print(f"Invalid choice '{choice}'. Please try again.")
                 
 
@@ -110,6 +102,49 @@ async def controller_setup(args: argparse.Namespace):
         logger.error(f"Error in main loop: {e}")
     finally:
         busses[com_bus._MODBUS].close()
+
+async def common_startup_tasks():
+    logger.info("Performing common startup tasks...")
+
+    if not os.path.exists(_IMPL_DIR):
+        logger.info(f"Implementation directory not found at '{_IMPL_DIR}', creating it...")
+        os.makedirs(_IMPL_DIR)
+
+    if not os.path.exists(_LOG_PATH):
+        logger.info(f"Log file not found at '{_LOG_PATH}', creating it...")
+        with open(_LOG_PATH, "w") as f:
+            pass
+
+    file_handler = logging.FileHandler(_LOG_PATH)
+    file_handler.setFormatter(logging.Formatter("%(asctime)s - [%(levelname)s] %(message)s"))
+    logger.addHandler(file_handler)
+
+    if not os.path.exists(_CONFIG_PATH):
+        logger.critical(f"Config file not found at '{_CONFIG_PATH}'.")
+        exit(1)
+
+    if not os.path.exists(_PLANTS_DIR):
+        logger.info(f"Plants directory not found at '{_PLANTS_DIR}', creating it...")
+        os.makedirs(_PLANTS_DIR)
+
+    if not os.path.exists(_SCHEDULES_DIR):
+        logger.info(f"Pump schedules directory not found at '{_SCHEDULES_DIR}', creating it...")
+        os.makedirs(_SCHEDULES_DIR)
+
+    config = load_config()
+    db_client = connect_to_db(config)
+    busses = await com_bus.busses()
+    try:
+        units = create_units(
+            config=config,
+            db_client=db_client,
+            busses=busses
+        )
+        return units, db_client, busses
+    except Exception as e:
+        logger.error(f"Error during startup: {e}")
+        busses[com_bus._MODBUS].close()
+        raise
 
 def load_config(path: str = _CONFIG_PATH) -> dict:
     with open(path, "rb") as f:
@@ -122,34 +157,37 @@ def create_units(
     busses: dict[str, com_bus.Bus]
 ) -> list[unit.Unit]:
     units = []
+
+    for config, config_location in [
+        (plant.Plant.parse_config(os.path.join(_PLANTS_DIR, f)), os.path.join(_PLANTS_DIR, f))
+        for f
+        in os.listdir(_PLANTS_DIR)
+        if f.endswith(".json")
+    ]:
+        units.append(
+            plant.Plant(
+                config=config,
+                db_client=db_client,
+                busses=busses,
+                schedules_directory=_SCHEDULES_DIR,
+                config_path=config_location
+            )
+        )
+
+    if not units:
+        logger.warning(f"No plants configured for the controller. Add plant configuration files to '{_SCHEDULES_DIR}'.")
+
     units.append(
         greenhouse.Greenhouse(
             db_client=db_client,
             busses=busses
         )
     )
-
-    for config in plant_configs():
-        units.append(
-            plant.Plant(
-                config=config,
-                db_client=db_client,
-                busses=busses,
-                schedules_directory=_SCHEDULES_DIR
-            )
-        )
     
     return units
 
-def plant_configs(path: str = _PLANTS_DIR) -> list[dict]:
-    return [
-        plant.Plant.parse_config(os.path.join(path, f))
-        for f
-        in os.listdir(path)
-        if f.endswith(".json")
-    ]
-
 def connect_to_db(config: dict) -> database.DatabaseClient:
+    logger.info(f"Connecting to database {config['database']['name']} at {config['database']['host']}...")
     db = database.Database(
         name=config["database"]["name"],
         host=config["database"]["host"],
@@ -161,6 +199,20 @@ def parse_args(*args, **kwargs) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="plant_controller",
         description="System for mointoring and watering of plants."
+    )
+
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {_version.__version__}"
+    )
+
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default=os.getenv("PLANT_CONTROLLER_LOG_LEVEL", "WARNING").upper(),
+        help="Set the logging level. Default is INFO. Can also be set via the PLANT_CONTROLLER_LOG_LEVEL environment variable.",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     )
 
     subparsers = parser.add_subparsers(
@@ -184,6 +236,7 @@ def parse_args(*args, **kwargs) -> argparse.Namespace:
 
 async def main():
     args = parse_args()
+    logger.setLevel(args.log_level)
     if not hasattr(args, "func"):
         parse_args(["--help"])
         return

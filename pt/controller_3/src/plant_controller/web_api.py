@@ -26,13 +26,15 @@ class WebAPI:
         host: str,
         port: int,
         db_client: DatabaseClient,
-        units: list[Unit]
+        units: list[Unit],
+        log_level: str = "INFO"
     ):
         self.host = host
         self.port = port
         self.db_client = db_client
         self.sensed_units = {unit.name: unit for unit in units}
         self.actuated_units = {unit.name: unit for unit in units if unit.has_actuation()}
+        self.log_level = log_level
 
         api = FastAPI(
             title="Plant Controller web API",
@@ -100,7 +102,7 @@ class WebAPI:
                 Query(
                     title="Since timestamp",
                     description="Only return measurements taken after this timestamp. If not provided, all measurements will be returned regardless of timestamp. Should be in the format YYYYMMDD-hhmmss.sssssssss, but anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on.",
-                    example="20260528-112233.123456789"
+                    examples=["20260528-112233.123456789"]
                 )
             ] = None
         ) -> JSONResponse:
@@ -148,7 +150,7 @@ class WebAPI:
                 Query(
                     title="Since timestamp",
                     description="Only return events taken after this timestamp. If not provided, all events will be returned regardless of timestamp. Should be in the format YYYYMMDD-hhmmss.sssssssss, but anything after the date can be ommitted - YYYYMMDD will be parsed as YYYYMMDD-000000.000000000, YYYYMMDD-hh will be parsed as YYYYMMDD-hh0000.000000000, and so on.",
-                    example="20260528-112233.123456789"
+                    examples=["20260528-112233.123456789"]
                 )
             ] = None
         ):
@@ -186,7 +188,7 @@ class WebAPI:
                 api,
                 host=self.host,
                 port=self.port,
-                log_level="info",
+                log_level=self.log_level.lower(),
                 loop="anyio"
             )
         )

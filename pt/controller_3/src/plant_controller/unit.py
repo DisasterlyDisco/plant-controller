@@ -1,5 +1,4 @@
 import anyio
-import argparse
 
 from .database import DatabaseClient
 from .datapoint import Datapoint
