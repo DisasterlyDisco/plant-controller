@@ -63,7 +63,7 @@ class WebAPI:
                     }
                 )
 
-        @router.get("/")
+        @router.get("/", include_in_schema=False)
         async def root() -> dict[str, Any]:
             return {
                 "plant-controller": {
@@ -73,7 +73,7 @@ class WebAPI:
                 }
             }
         
-        @router.get("/favicon.ico")
+        @router.get("/favicon.ico", include_in_schema=False)
         async def dummy_favicon():
             return
         
