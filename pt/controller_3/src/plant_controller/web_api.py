@@ -174,7 +174,7 @@ class WebAPI:
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=f"Schedule wasn't valid: {e}")
         
-        @router.get("/actuation/rocket_silo/nuclear_missile/launch")
+        @router.get("/actuation/rocket_silo/nuclear_missile/launch", include_in_schema=False)
         async def launch_missile() -> JSONResponse:
             return JSONResponse(
                 status_code=418,
