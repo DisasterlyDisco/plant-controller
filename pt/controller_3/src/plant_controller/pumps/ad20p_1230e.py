@@ -2,6 +2,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from collections.abc import Coroutine
+from time import sleep
 from typing import Any
 
 import anyio
@@ -47,13 +48,13 @@ class CS_IO404_Based_AD20P_1230E(Pump, MODBUSInterface, HasSetupFunctionsMixin):
         await self.db_save_function(WateringEvent(dosage=dosage))
     
     async def _toggle_pump_on_for_duration(self, time: float):
-        await self.bus.write_coil(
+        self.bus.write_coil(
             address=self.coil_number,
             value=True,
             device_id=self.relay_address
         )
-        await anyio.sleep(time)
-        await self.bus.write_coil(
+        sleep(time)
+        self.bus.write_coil(
             address=self.coil_number,
             value=False,
             device_id=self.relay_address

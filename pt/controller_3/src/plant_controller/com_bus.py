@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 from abc import ABC, abstractmethod
 
 import adafruit_tca9548a
-from pymodbus.client import AsyncModbusSerialClient
+from pymodbus.client import ModbusSerialClient
 
 import anyio
 import board
@@ -39,7 +39,7 @@ class MODBUS(Bus):
         timeout: float = 1.0
     ):
         super().__init__()
-        self.client = AsyncModbusSerialClient(
+        self.client = ModbusSerialClient(
             port=port,
             baudrate=baudrate,
             bytesize=bytesize,
@@ -49,22 +49,21 @@ class MODBUS(Bus):
         )
     
     def __getattr__(self, name):
-        # Proxy all other method calls to the underlying client, but ensure they are called within the lock
+        # Proxy all other method calls to the underlying client
         try:
             attr = getattr(self.client, name)
         except AttributeError:
             raise AttributeError(f"Neither this '{type(self).__name__}' object nor the wrapped '{type(self.client).__name__}' object has any attribute '{name}'")
         if callable(attr):
-            async def locked_method(*args, **kwargs):
-                async with self.lock:
-                    return await attr(*args, **kwargs)
+            def locked_method(*args, **kwargs):
+                return attr(*args, **kwargs)
             return locked_method
         else:
             return attr
     
     async def connect(self):
         try:
-            await self.client.connect()
+            self.client.connect()
             logger.info("Connected to MODBUS client")
         except Exception as e:
             logger.error(f"Failed to connect to MODBUS client: {e}")

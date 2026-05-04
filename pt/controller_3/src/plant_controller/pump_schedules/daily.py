@@ -54,7 +54,7 @@ class Schedule(PumpSchedule):
                 sleep_time_delta = tomorrows_first_event_datetime - current_time
                 sleep_time = sleep_time_delta.total_seconds()
                 dose = tomorrows_first_event[1]
-            logger.info(f"Current time is {current_time.isoformat()}. Next watering event is at {event[0].isoformat()} with a dose of {dose} ml. Scheduled to sleep for {sleep_time_delta}.")
+            logger.info(f"Current time is {current_time.isoformat()}. Next watering event is at {tomorrows_first_event_datetime.isoformat()} with a dose of {dose} ml. Scheduled to sleep for {sleep_time_delta}.")
         
             await anyio.sleep(sleep_time)
 
