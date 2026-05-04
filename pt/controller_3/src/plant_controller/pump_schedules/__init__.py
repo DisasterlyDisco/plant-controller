@@ -1,7 +1,12 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any
 import importlib, json
+
+import anyio
 
 class PumpSchedule(ABC):
     @abstractmethod
@@ -65,11 +70,31 @@ class PumpSchedule(ABC):
         """
         pass
 
+class NonSchedule(PumpSchedule):
+    def __init__(self, schedule: Any | None = None):
+        pass
+    
+    def get_schedule(self) -> str:
+        return "No schedule, the plant will not be watered automatically."
+    
+    async def run_schedule(self, pump_function: Callable[[int], None]):
+        logger.warning("Plant running empty schedule, no watering will happen.")
+        await anyio.sleep_forever()
+
 def parse_schedule(schedule_location: str) -> PumpSchedule:
-    with open(schedule_location, "rb") as schedule_file:
-        schedule_dict = json.loads(schedule_file.read())
-    schedule_module = importlib.import_module(__name__ + "." + schedule_dict["type"])
-    return getattr(schedule_module, "Schedule")(schedule_dict.get("schedule"))
+    try:
+        with open(schedule_location, "rb") as schedule_file:
+            schedule_dict = json.loads(schedule_file.read())
+        validate_schedule(schedule_dict)
+        schedule_module = importlib.import_module(__name__ + "." + schedule_dict["type"])
+        return getattr(schedule_module, "Schedule")(schedule_dict.get("schedule"))
+    except ValueError as e:
+        logger.error(f"Schedule config at {schedule_location} is invalid: {e}")
+        return NonSchedule()
+    except Exception as e:
+        logger.error(f"Error loading schedule config at {schedule_location}: {e}")
+        return NonSchedule()
+        
 
 def validate_schedule(schedule_config: dict[str, Any]):
     """

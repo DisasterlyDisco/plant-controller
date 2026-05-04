@@ -7,7 +7,7 @@ from typing import Any
 import anyio
 
 from . import Pump
-from ..datapoint import Datapoint
+from ..datapoint import Datapoint, WateringEvent
 from ..cli_helpers import clear_screen
 from ..com_bus import MODBUS, MODBUSInterface
 from ..setup_actions import HasSetupFunctionsMixin
@@ -44,6 +44,7 @@ class CS_IO404_Based_AD20P_1230E(Pump, MODBUSInterface, HasSetupFunctionsMixin):
         pump_time = self.doseage_to_time(dosage)
         logger.info(f"Starting pump {self.relay_address}-{self.coil_number} for {pump_time} seconds, corresponding to a dosage of {dosage} ml")
         await self._toggle_pump_on_for_duration(pump_time)
+        await self.db_save_function(WateringEvent(dosage=dosage))
     
     async def _toggle_pump_on_for_duration(self, time: float):
         await self.bus.write_coil(
@@ -107,7 +108,7 @@ class CS_IO404_Based_AD20P_1230E(Pump, MODBUSInterface, HasSetupFunctionsMixin):
                 print(f"The given input '{response}' wasn't a whole number!")
         
         # Time to wait on water in watering tube to recede back into watertank
-        rest_time = response / 5 if response > 0 else 0
+        rest_time = response / 10 if response > 0 else 0
         clear_screen()
 
         print("The controller will now go through multiple cycles of turning on the pump for")
@@ -160,10 +161,12 @@ class CS_IO404_Based_AD20P_1230E(Pump, MODBUSInterface, HasSetupFunctionsMixin):
                 except Exception:
                     print(f"The given input '{response}' wasn't a whole number!")
             if response > 0:
-                print(f"Recorded pumped amount: {response} ml")
-                print(f"Recorded pumping time: {pumping_time} seconds")
+                logger.debug(f"Recorded pumped amount: {response} ml")
+                logger.debug(f"Recorded pumping time: {pumping_time} seconds")
                 pumped_amounts.append(response)
                 pumped_durations.append(pumping_time)
+            else:
+                logger.debug("Calibrater recorded a pumped amount of 0ml, discarding this data point.")
 
             print("Empty the measuring cup.")
             print("(Press enter to continue)")
@@ -208,7 +211,9 @@ class CS_IO404_Based_AD20P_1230E(Pump, MODBUSInterface, HasSetupFunctionsMixin):
                 break
             except ValueError:
                 print("Invalid input. Please enter an integer value for the dosage.")
-        await self.pumping_callback(dosage)
+        pump_time = self.doseage_to_time(dosage)
+        logger.info(f"Starting pump {self.relay_address}-{self.coil_number} for {pump_time} seconds, corresponding to a dosage of {dosage} ml")
+        await self._toggle_pump_on_for_duration(pump_time)
 
     def setup_functions(self) -> dict[str, dict[str, any]]:
         return {
