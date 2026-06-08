@@ -49,11 +49,14 @@ class Schedule(PumpSchedule):
         """
         self.schedule_list = sorted(list(
                 map(
-                    lambda event: (datetime.time.fromisoformat(event["time"]), event["dose"]),
+                    lambda event: {
+                        "time": datetime.time.fromisoformat(event["time"]),
+                        "dose": event["dose"]
+                    },
                     schedule
                 )
             ),
-            key=lambda event: event[0]
+            key=lambda event: event["time"]
         )
     
     def get_schedule(self) -> str | dict:
@@ -79,11 +82,11 @@ class Schedule(PumpSchedule):
             today = datetime.date.today()
             current_time = datetime.datetime.now()
             for event in self.schedule_list:
-                datetime_event = datetime.datetime.combine(today, event[0])
+                datetime_event = datetime.datetime.combine(today, event["time"])
                 if current_time < datetime_event:
                     sleep_time_delta = datetime_event - current_time
                     sleep_time = sleep_time_delta.total_seconds()
-                    dose = event[1]
+                    dose = event["dose"]
                     break
         
             # Current time is later than last time for the day:
@@ -91,12 +94,12 @@ class Schedule(PumpSchedule):
                 tomorrow = today + datetime.timedelta(days=1)
                 tomorrows_first_event = self.schedule_list[0]
                 datetime_event = datetime.datetime.combine(
-                    tomorrow, tomorrows_first_event[0]
+                    tomorrow, tomorrows_first_event["time"]
                 )
                 sleep_time_delta = datetime_event - current_time
                 sleep_time = sleep_time_delta.total_seconds()
-                dose = tomorrows_first_event[1]
-
+                dose = tomorrows_first_event["dose"]
+                
             _logger.info(f"Current time is {current_time.isoformat()}. Next watering event is at {datetime_event.isoformat()} with a dose of {dose} ml. Scheduled to sleep for {sleep_time_delta}.")
         
             await anyio.sleep(sleep_time)
