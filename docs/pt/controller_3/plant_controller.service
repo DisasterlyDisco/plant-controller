@@ -1,0 +1,8 @@
+[Unit]
+Description=Plant Controller DT/PT interface layer
+
+[Service]
+ExecStart=%h/.plant_controller/auto_start.sh
+
+[Install]
+WantedBy=default.target
