@@ -16,6 +16,7 @@ from fastapi import FastAPI, APIRouter, Query, HTTPException
 from fastapi.responses import JSONResponse
 
 from .database import DatabaseClient
+from .pump_schedules import BaseRepresentation as ScheduleBaseRepresentation
 from .unit import Unit
 from ._version import __version__
 
@@ -206,16 +207,14 @@ class WebAPI:
         async def show_watering_schedule(unit: str):
             """Return the current watering schedule for a unit."""
             check_unit_in_units(unit, self.actuated_units)
-            return self.actuated_units[unit].schedule.get_schedule()
+            return self.actuated_units[unit].schedule.json_representation()
         
         @router.put("/actuation/{unit}/update_schedule", status_code=204)
-        async def update_watering_schedule(unit: str, schedule: ScheduleJSON):
+        async def update_watering_schedule(unit: str, schedule: ScheduleBaseRepresentation):
             """Replace the watering schedule for a unit. Returns 204 on success."""
             check_unit_in_units(unit, self.actuated_units)
             try:
-                # FastAPI implicitly transforms json request bodies into python dictionaries,
-                # so the schedule can be passed on as is.
-                self.actuated_units[unit].update_schedule(schedule.to_dict())
+                self.actuated_units[unit].update_schedule(schedule)
             except ValueError as e:
                 raise HTTPException(status_code=422, detail=f"Schedule wasn't valid: {e}")
         

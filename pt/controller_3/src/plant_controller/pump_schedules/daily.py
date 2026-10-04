@@ -26,7 +26,7 @@ import datetime
 
 import anyio
 
-from . import PumpSchedule
+from . import BaseRepresentation, PumpSchedule
 
 
 class Schedule(PumpSchedule):
@@ -40,7 +40,7 @@ class Schedule(PumpSchedule):
         schedule_list: Sorted list of (time, dose) tuples.
     """
 
-    def __init__(self, schedule: Any | None):
+    def __init__(self, schedule_details: Any | None):
         """Parse the schedule list into sorted (time, dose) tuples.
 
         Args:
@@ -53,19 +53,17 @@ class Schedule(PumpSchedule):
                         "time": datetime.time.fromisoformat(event["time"]),
                         "dose": event["dose"]
                     },
-                    schedule
+                    schedule_details
                 )
             ),
             key=lambda event: event["time"]
         )
     
-    def get_schedule(self) -> str | dict:
-        """Return a dict describing the daily schedule and its events."""
-        return {
-            "type": "daily",
-            "description": "Daily watering schedule. The plant is watered each day at the given times.",
-            "schedule": self.schedule_list
-        }
+    def get_description(self) -> str | None:
+        return "Daily watering schedule. The plant is watered each day at the given times."
+    
+    def get_details(self) -> Any:
+        return self.schedule_list
 
     async def run_schedule(self, pump_function: Coroutine[Any, int]):
         """Sleep until the next scheduled time, then pump. Repeats forever.

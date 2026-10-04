@@ -8,20 +8,22 @@ Writing a custom schedule module:
     1. Create a new ``.py`` file in this package (e.g. ``my_schedule.py``).
     2. Define a class called **exactly** ``Schedule`` that inherits from
        ``PumpSchedule``.
-    3. Implement the three abstract methods: ``__init__``, ``get_schedule``,
+    3. Implement the three abstract methods: ``__init__``, ``get_details``,
        and ``run_schedule``.
-    4. Optionally implement ``validate_schedule`` as a ``@staticmethod``
-       to validate config data before instantiation.
+    4. Optionally implement ``validate_schedule_details`` as a
+       ``@staticmethod`` to validate config data before instantiation,
+       and ``get_description`` to give a human description of what the
+       schedule does.
     5. Create a schedule JSON file in ``~/.plant_controller/pump_schedules/``
        named ``<plant_name>.json``::
 
            {
                "type": "my_schedule",
-               "schedule": { ... schedule-specific data ... }
+               "details": { ... schedule-specific data ... }
            }
 
        The ``"type"`` value must match the module filename (without .py).
-       The ``"schedule"`` value is passed to ``Schedule.__init__``.
+       The ``"details"`` value is passed to ``Schedule.__init__``.
 
 Example minimal schedule::
 
@@ -29,12 +31,18 @@ Example minimal schedule::
     from plant_controller.pump_schedules import PumpSchedule
 
     class Schedule(PumpSchedule):
-        def __init__(self, schedule):
-            self.dose = schedule["dose_ml"]
-            self.interval = schedule["interval_seconds"]
+        def __init__(self, details):
+            self.dose = details["dose_ml"]
+            self.interval = details["interval_seconds"]
 
-        def get_schedule(self):
+        def get_description(self):
             return f"Pump {self.dose}ml every {self.interval}s"
+        
+        def get_details(self):
+            return {
+                "dose_ml": self.dose,
+                "interval_seconds": self.interval
+            }
 
         async def run_schedule(self, pump_function):
             while True:
@@ -42,10 +50,10 @@ Example minimal schedule::
                 await pump_function(self.dose)
 
         @staticmethod
-        def validate_schedule(schedule_conf):
-            if "dose_ml" not in schedule_conf:
+        def validate_schedule_details(schedule_details):
+            if "dose_ml" not in schedule_details:
                 raise ValueError("Must include 'dose_ml'")
-            if "interval_seconds" not in schedule_conf:
+            if "interval_seconds" not in schedule_details:
                 raise ValueError("Must include 'interval_seconds'")
 """
 
@@ -60,7 +68,15 @@ import importlib, json
 import anyio
 from pydantic import BaseModel
 
-class WateringScheduleBaseRepresentation(BaseModel):
+class BaseRepresentation(BaseModel):
+    """Base Representation of a PumpSchedule.
+    
+    Any out of program representation of a PumpSchedule should contain these
+    parameters if they are to be parsed as a PumpSchedule in program.
+
+    Primarily used to define how a PumpSchedule is represented and stored
+    as JSON.
+    """
     type: str
     description: str | None = None
     details: Any
@@ -77,31 +93,35 @@ class PumpSchedule(ABC):
     """
 
     @abstractmethod
-    def __init__(self, schedule: Any | None):
+    def __init__(self, schedule_details: Any | None):
         """Initialize the schedule from configuration data.
 
-        The ``schedule`` parameter receives whatever was in the "schedule"
+        The ``schedule`` parameter receives whatever was in the "details"
         field of the JSON config file. Its structure is entirely up to the
         implementer.
 
         Args:
-            schedule: Schedule-specific configuration data (type defined by
-                the implementation). May be None if the schedule requires no
-                configuration.
+            schedule_Details: Schedule-specific configuration data (type
+                defined by the implementation). May be None if the schedule
+                requires no configuration.
         """
         pass
 
+    def json_representation(self) -> str:
+        return BaseRepresentation(
+            type=self.get_type(),
+            description=self.get_description(),
+            details=self.get_details()
+        ).model_dump_json(indent=4)
+    
+    def get_type(self) -> str:
+        return __name__
+    
+    def get_description(self) -> str | None:
+        return None
+
     @abstractmethod
-    def get_schedule(self) -> str | dict:
-        """Return a human-readable representation of this schedule.
-
-        This is served via the HTTP API so that users can inspect the
-        current watering plan without reading config files.
-
-        Returns:
-            A string description or dict (serialized as JSON) explaining
-            when watering will occur and at what dosages.
-        """
+    def get_details(self) -> Any:
         pass
 
     @abstractmethod
@@ -123,7 +143,7 @@ class PumpSchedule(ABC):
         pass
 
     @staticmethod
-    def validate_schedule(schedule_conf: Any):
+    def validate_schedule_details(schedule_details: Any):
         """Validate schedule-specific configuration data.
 
         Called during schedule loading to catch config errors early.
@@ -133,7 +153,7 @@ class PumpSchedule(ABC):
         If validation is not needed, this method can be left as a no-op.
 
         Args:
-            schedule_conf: The "schedule" field from the JSON config file.
+            schedule_details: The "details" field from the JSON config file.
 
         Raises:
             ValueError: If the configuration is invalid.
@@ -147,11 +167,17 @@ class NonSchedule(PumpSchedule):
     schedule parsing fails.
     """
 
-    def __init__(self, schedule: Any | None = None):
+    def __init__(self, details: Any | None = None):
         pass
 
-    def get_schedule(self) -> str:
-        return "No schedule, the plant will not be watered automatically."
+    def get_type(self) -> str:
+        return "NO SCHEDULE!"
+    
+    def get_description(self) -> str | None:
+        return "No valid schedule present for the plant; it will not be watered automatically. "
+    
+    def get_details(self) -> Any:
+        return None
 
     async def run_schedule(self, pump_function: Callable[[int], None]):
         _logger.warning("Plant running empty schedule, no watering will happen.")
@@ -171,44 +197,18 @@ def parse_schedule(schedule_location: str) -> PumpSchedule:
     """
     try:
         with open(schedule_location, "rb") as schedule_file:
-            schedule_dict = json.loads(schedule_file.read())
-        validate_schedule_config(schedule_dict)
-        schedule_module = importlib.import_module(__name__ + "." + schedule_dict["type"])
-        return getattr(schedule_module, "Schedule")(schedule_dict.get("schedule"))
+            schedule_representation = BaseRepresentation.model_validate_json(schedule_file.read())
+        return validate_schedule_representation(schedule_representation)
     except ValueError as e:
         _logger.error(f"Schedule config at {schedule_location} is invalid: {e}")
         return NonSchedule()
     except Exception as e:
         _logger.error(f"Error loading schedule config at {schedule_location}: {e}")
         return NonSchedule()
-        
 
-def validate_schedule_config(schedule_config: dict[str, Any]):
-    """Validate the top-level structure of a schedule config dict.
-
-    Checks that the required 'type' and 'schedule' keys exist, that the
-    referenced module can be imported and contains a 'Schedule' class,
-    and delegates to that class's validate_schedule for content
-    validation.
-
-    Args:
-        schedule_config: Parsed JSON dict with 'type' and 'schedule' keys.
-
-    Raises:
-        ValueError: If the config structure is invalid or the module/class
-            cannot be loaded.
-    """
-    if "type" not in schedule_config:
-        raise ValueError("Schedule must have a 'type' field, indicating type of the schedule and the underlying python module that defines it.")
-    
-    if "schedule" not in schedule_config:
-        raise ValueError("Schedule must contain a value called 'schedule' containing type specefic details on the schedule, for example times and dosages.")
-    
-    if not isinstance(schedule_config["type"], str):
-        raise ValueError("'type' field must be a string, indicating the type of the schedule and the underlying python module that defines it.")
-    
+def validate_schedule_representation(schedule_representation) -> PumpSchedule:
     try:
-        module_name = __name__ + "." + schedule_config["type"]
+        module_name = __name__ + "." + schedule_representation.type
         schedule_module = importlib.import_module(module_name)
     except Exception as e:
         raise ValueError(f"Could not load the module {module_name}: {e}")
@@ -217,5 +217,7 @@ def validate_schedule_config(schedule_config: dict[str, Any]):
         schedule_class = getattr(schedule_module, "Schedule")
     except Exception as e:
         raise ValueError(f"Could not find the 'Schedule' class inside the schedules types module {module_name}")
+    
+    schedule_class.validate_schedule_details(schedule_representation.details)
 
-    schedule_class.validate_schedule(schedule_config["schedule"])
+    return getattr(schedule_module, "Schedule")(schedule_representation.details)
