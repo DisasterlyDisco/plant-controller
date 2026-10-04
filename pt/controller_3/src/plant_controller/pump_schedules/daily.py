@@ -105,32 +105,32 @@ class Schedule(PumpSchedule):
             await pump_function(dose)
 
     @staticmethod
-    def validate_schedule(schedule_conf: Any):
+    def validate_schedule_details(schedule_details: Any):
         """Validate that schedule_conf is a list of {time, dose} dicts.
 
         Args:
-            schedule_conf: The "schedule" field from the config JSON.
+            schedule_details: The "details" field from the config JSON.
 
         Raises:
             ValueError: If format requirements are not met.
         """
-        if not isinstance(schedule_conf, list):
-            raise ValueError("A schedule of type 'daily' needs a list of dictionaries containing watering events in the 'schedule' value.")
+        if not isinstance(schedule_details, list):
+            raise ValueError("A schedule of type 'daily' needs a list of dictionaries containing watering events in the 'details' value.")
         
-        for entry in schedule_conf:
+        for entry in schedule_details:
             if not isinstance(entry, dict):
-                raise ValueError("Each entry in the daily schedules 'schedule' list must be a dictionary.")
+                raise ValueError("Each entry in the daily schedules 'details' list must be a dictionary.")
             
             if "time" not in entry:
-                raise ValueError("Each entry in the daily schedules 'schedule' list must contain a 'time' entry.")
+                raise ValueError("Each entry in the daily schedules 'details' list must contain a 'time' entry.")
             
             try:
                 datetime.time.fromisoformat(entry["time"])
             except Exception as e:
-                raise ValueError("Each 'time' in each entry in the daily schedules 'schedule' list must be a proper time following the ISO 8601 standard.")
+                raise ValueError("Each 'time' in each entry in the daily schedules 'details' list must be a proper time following the ISO 8601 standard.")
             
             if "dose" not in entry:
-                raise ValueError("Each entry in the daily schedules 'schedule' list must contain a 'dose' entry.")
+                raise ValueError("Each entry in the daily schedules 'details' list must contain a 'dose' entry.")
             
             if not isinstance(entry["dose"], int):
-                raise ValueError("Each 'dose' in each entry in the daily schedules 'schedule' list must be an integer.")
+                raise ValueError("Each 'dose' in each entry in the daily schedules 'details' list must be an integer.")
