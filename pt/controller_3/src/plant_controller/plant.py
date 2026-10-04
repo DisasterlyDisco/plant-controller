@@ -176,6 +176,7 @@ class Plant(Unit):
             with anyio.CancelScope() as scope:
                 self.pump_schedule_coroutine_cancel_scope = scope
                 self.schedule = pump_schedules.parse_schedule(self.schedule_location)
+                self.schedule.register_plant(self)
                 _logger.debug(f"Plant {self.name} watering started with schedule.")
                 await self.schedule.run_schedule(self.pump.pumping_callback)
             _logger.debug(f"Plant {self.name} cancelled watering schedule.")

@@ -12,8 +12,8 @@ Writing a custom schedule module:
        and ``run_schedule``.
     4. Optionally implement ``validate_schedule_details`` as a
        ``@staticmethod`` to validate config data before instantiation,
-       and ``get_description`` to give a human description of what the
-       schedule does.
+       ``get_description`` to give a human description of what the
+       schedule does, and the visiter method ``register_plant`` if necessary.
     5. Create a schedule JSON file in ``~/.plant_controller/pump_schedules/``
        named ``<plant_name>.json``::
 
@@ -61,9 +61,9 @@ import logging
 _logger = logging.getLogger(__name__)
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable
+from collections.abc import Coroutine
 from typing import Any
-import importlib, json
+import importlib
 
 import anyio
 from pydantic import BaseModel
@@ -107,6 +107,13 @@ class PumpSchedule(ABC):
         """
         pass
 
+    def register_plant(self, plant):
+        """Visiter method, to be called by Plants before running the schedule.
+        
+        Base implementation is a noop - may be extended by inheriting classes.
+        """
+        pass
+
     def json_representation(self) -> str:
         return BaseRepresentation(
             type=self.get_type(),
@@ -125,7 +132,7 @@ class PumpSchedule(ABC):
         pass
 
     @abstractmethod
-    async def run_schedule(self, pump_function: Callable[[int], None]):
+    async def run_schedule(self, pump_function: Coroutine[Any, int]):
         """Execute the schedule, calling pump_function at appropriate times.
 
         This coroutine runs indefinitely. It should await ``anyio.sleep()``
@@ -179,7 +186,7 @@ class NonSchedule(PumpSchedule):
     def get_details(self) -> Any:
         return None
 
-    async def run_schedule(self, pump_function: Callable[[int], None]):
+    async def run_schedule(self, pump_function: Coroutine[Any, int]):
         _logger.warning("Plant running empty schedule, no watering will happen.")
         await anyio.sleep_forever()
 
