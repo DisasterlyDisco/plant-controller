@@ -107,7 +107,7 @@ class Schedule(PumpSchedule):
             await pump_function(dose)
 
     @staticmethod
-    def validate_schedule_conf(schedule_conf: Any):
+    def validate_schedule(schedule_conf: Any):
         """Validate that schedule_conf is a list of {time, dose} dicts.
 
         Args:

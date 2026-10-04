@@ -26,7 +26,7 @@ class ScheduleJSON(BaseModel):
     schedule: Any
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to a plain dict for passing to validate_schedule."""
+        """Convert to a canonical plain dict."""
         return {
             "type": self.type,
             "schedule": self.schedule

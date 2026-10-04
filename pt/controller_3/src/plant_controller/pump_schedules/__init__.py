@@ -10,7 +10,7 @@ Writing a custom schedule module:
        ``PumpSchedule``.
     3. Implement the three abstract methods: ``__init__``, ``get_schedule``,
        and ``run_schedule``.
-    4. Optionally implement ``validate_schedule_conf`` as a ``@staticmethod``
+    4. Optionally implement ``validate_schedule`` as a ``@staticmethod``
        to validate config data before instantiation.
     5. Create a schedule JSON file in ``~/.plant_controller/pump_schedules/``
        named ``<plant_name>.json``::
@@ -42,7 +42,7 @@ Example minimal schedule::
                 await pump_function(self.dose)
 
         @staticmethod
-        def validate_schedule_conf(schedule_conf):
+        def validate_schedule(schedule_conf):
             if "dose_ml" not in schedule_conf:
                 raise ValueError("Must include 'dose_ml'")
             if "interval_seconds" not in schedule_conf:
@@ -58,6 +58,12 @@ from typing import Any
 import importlib, json
 
 import anyio
+from pydantic import BaseModel
+
+class WateringScheduleBaseRepresentation(BaseModel):
+    type: str
+    description: str | None = None
+    details: Any
 
 class PumpSchedule(ABC):
     """Abstract base class for all pump schedule implementations.
@@ -117,7 +123,7 @@ class PumpSchedule(ABC):
         pass
 
     @staticmethod
-    def validate_schedule_conf(schedule_conf: Any):
+    def validate_schedule(schedule_conf: Any):
         """Validate schedule-specific configuration data.
 
         Called during schedule loading to catch config errors early.
@@ -166,7 +172,7 @@ def parse_schedule(schedule_location: str) -> PumpSchedule:
     try:
         with open(schedule_location, "rb") as schedule_file:
             schedule_dict = json.loads(schedule_file.read())
-        validate_schedule(schedule_dict)
+        validate_schedule_config(schedule_dict)
         schedule_module = importlib.import_module(__name__ + "." + schedule_dict["type"])
         return getattr(schedule_module, "Schedule")(schedule_dict.get("schedule"))
     except ValueError as e:
@@ -177,12 +183,12 @@ def parse_schedule(schedule_location: str) -> PumpSchedule:
         return NonSchedule()
         
 
-def validate_schedule(schedule_config: dict[str, Any]):
+def validate_schedule_config(schedule_config: dict[str, Any]):
     """Validate the top-level structure of a schedule config dict.
 
     Checks that the required 'type' and 'schedule' keys exist, that the
     referenced module can be imported and contains a 'Schedule' class,
-    and delegates to that class's validate_schedule_conf for content
+    and delegates to that class's validate_schedule for content
     validation.
 
     Args:
@@ -212,4 +218,4 @@ def validate_schedule(schedule_config: dict[str, Any]):
     except Exception as e:
         raise ValueError(f"Could not find the 'Schedule' class inside the schedules types module {module_name}")
 
-    schedule_class.validate_schedule_conf(schedule_config["schedule"])
+    schedule_class.validate_schedule(schedule_config["schedule"])

@@ -117,7 +117,7 @@ class Plant(Unit):
         Raises:
             ValueError: If the schedule config is invalid.
         """
-        pump_schedules.validate_schedule(schedule)
+        pump_schedules.validate_schedule_config(schedule)
         if self.pump_schedule_coroutine_cancel_scope is not None:
             self.pump_schedule_coroutine_cancel_scope.cancel()
         with open(self.schedule_location, 'w', encoding="utf-8") as schedule_file:
