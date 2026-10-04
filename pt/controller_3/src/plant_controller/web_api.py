@@ -20,20 +20,6 @@ from .pump_schedules import BaseRepresentation as ScheduleBaseRepresentation
 from .unit import Unit
 from ._version import __version__
 
-
-class ScheduleJSON(BaseModel):
-    """Request body model for schedule update endpoints."""
-    type: str
-    schedule: Any
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to a canonical plain dict."""
-        return {
-            "type": self.type,
-            "schedule": self.schedule
-        }
-
-
 class WebAPI:
     """HTTP API server wrapping the plant controller's data and commands.
 
