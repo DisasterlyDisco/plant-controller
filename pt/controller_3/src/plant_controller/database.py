@@ -129,7 +129,7 @@ class DatabaseClient(InfluxDBClient3):
         _logger.debug(f"Found tables: {tables}")
 
         print(f"Exporting database as {format.upper()} file, please be patient...")
-        for table in tables:
+        for _, table in tables.iterrows():
             if table["table_schema"] != "iox":
                 break  # Only export tables from the 'iox' schema, as these are the ones created by the plant controller
             table_name = table["table_name"]
