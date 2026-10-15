@@ -127,7 +127,7 @@ class DatabaseClient(InfluxDBClient3):
             return
 
         print(f"Exporting database as {format.upper()} file, please be patient...")
-        for table in tables['name']:
+        for table in tables['table_name']:
             _logger.debug(f"Exporting table: {table}")
             result = self.query(f'SELECT * FROM "{table}"').to_pandas()
             if result.empty:
