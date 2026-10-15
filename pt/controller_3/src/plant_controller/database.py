@@ -129,14 +129,17 @@ class DatabaseClient(InfluxDBClient3):
         _logger.debug(f"Found tables: {tables}")
 
         print(f"Exporting database as {format.upper()} file, please be patient...")
-        for table in tables['table_name']:
-            _logger.debug(f"Exporting table: {table}")
-            result = self.query(f'SELECT * FROM "{table}"').to_pandas()
+        for table in tables:
+            if table["table_schema"] != "iox":
+                break  # Only export tables from the 'iox' schema, as these are the ones created by the plant controller
+            table_name = table["table_name"]
+            _logger.debug(f"Exporting table: {table_name}")
+            result = self.query(f'SELECT * FROM "{table_name}"').to_pandas()
             if result.empty:
-                _logger.warning(f"No data found in table {table}. Skipping export for this table.")
+                _logger.warning(f"No data found in table {table_name}. Skipping export for this table.")
                 continue
 
-            table_export_path = os.path.join(export_dir, f"{table}.{format}")
+            table_export_path = os.path.join(export_dir, f"{table_name}.{format}")
             match format:
                 case 'csv':
                     result.to_csv(table_export_path, index=False)
