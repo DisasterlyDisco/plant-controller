@@ -80,7 +80,12 @@ class DatabaseClient(InfluxDBClient3):
         ).to_pandas()
 
     def interactive_export_database(self):
-        """Export the entire database to a file interactively."""
+        """Interactively export all database tables to files.
+
+        Prompts the user for an output directory and file format (CSV, JSON,
+        or Parquet), then exports each table in the 'iox' schema as a
+        separate file. The user can cancel at any prompt.
+        """
         from .cli_helpers import CANCELLATION_KEYWORDS, clear_screen
 
         clear_screen()
@@ -128,7 +133,7 @@ class DatabaseClient(InfluxDBClient3):
         
         _logger.debug(f"Found tables: {tables}")
 
-        print(f"Exporting database as {format.upper()} file, please be patient...")
+        print(f"Exporting database as {format.upper()} files, please be patient...")
         for _, table in tables.iterrows():
             if table["table_schema"] != "iox":
                 break  # Only export tables from the 'iox' schema, as these are the ones created by the plant controller
