@@ -8,6 +8,7 @@ import logging
 _logger = logging.getLogger(__name__)
 
 from datetime import datetime
+import os
 
 from influxdb_client_3 import InfluxDBClient3
 
@@ -77,6 +78,68 @@ class DatabaseClient(InfluxDBClient3):
         return self.query(
             query
         ).to_pandas()
+
+    def interactive_export_database(self):
+        """Export the entire database to a file interactively."""
+        from cli_helpers import CANCELLATION_KEYWORDS, clear_screen
+
+        clear_screen()
+
+        while(1):
+            export_dir = input("Enter the directory in which to save the exported database (or 'quit' to cancel): ")
+            clear_screen()
+
+            if export_dir.lower() in CANCELLATION_KEYWORDS:
+                print("Export cancelled.")
+                return
+
+            if not export_dir:
+                export_dir = os.getcwd()
+            elif not os.path.exists(export_dir):
+                os.makedirs(export_dir)
+
+            confirm = input(f"Are you sure you want to export the entire database to {export_dir}? (yes/NO): ")
+            clear_screen()
+            if confirm.lower() in ['yes', 'y']:
+                break
+            elif confirm.lower() in CANCELLATION_KEYWORDS:
+                print("Export cancelled.")
+                return
+
+        while(1):
+            print("Select the export format:")
+            print("1. CSV")
+            print("2. JSON")
+            print("3. Parquet")
+            format = input().lower()
+            clear_screen()
+            if format in ['1', 'csv', '2', 'json', '3', 'parquet']:
+                break
+            elif format in CANCELLATION_KEYWORDS:
+                print("Export cancelled.")
+                return
+            else:
+                print(f"Invalid selection: {format}. Please choose 1, 2, or 3.")
+
+        query = 'SELECT * FROM /.*/'
+        _logger.debug(f'Executing query for export: {query}')
+        result = self.query(query).to_pandas()
+
+        print(f"Exporting database as {format.upper()} file, please be patient...")
+
+        match format:
+            case '1' | 'csv':
+                export_path = os.path.join(export_dir, 'exported_database.csv')
+                result.to_csv(export_path, index=False)
+            case '2' | 'json':
+                export_path = os.path.join(export_dir, 'exported_database.json')
+                result.to_json(export_path, orient='records', lines=True)
+            case '3' | 'parquet':
+                export_path = os.path.join(export_dir, 'exported_database.parquet')
+                result.to_parquet(export_path, index=False)
+
+        clear_screen()
+        print(f"Database exported successfully to {export_path}")
 
 
 class Database:

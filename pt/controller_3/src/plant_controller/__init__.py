@@ -79,7 +79,7 @@ async def controller_setup(args: argparse.Namespace):
     print("Here you are able to perform different setup actions, depending on the connected units and sensors.")
     print("")
     print("Checking connected units and sensors for setup actions...")
-    units, _, busses = await common_startup_tasks()
+    units, db_client, busses = await common_startup_tasks()
     
     try:
         setup_actions = {}
@@ -99,6 +99,7 @@ async def controller_setup(args: argparse.Namespace):
             for unit_name, actions in setup_actions.items():
                 for action_name, action_info in actions.items():
                     print(f"  {unit_name}.{action_name}: {action_info['description']}")
+            print("  export_db: Export the database.")
             print("  exit: Exit the setup utility.")
             print("")
             choice = input("Enter the name of the setup action you want to perform: ")
@@ -106,6 +107,10 @@ async def controller_setup(args: argparse.Namespace):
                 clear_screen()
                 print("Exiting setup utility. Goodbye!")
                 break
+            if choice == "export_db":
+                clear_screen()
+                db_client.interactive_export_database()
+                continue
             if "." in choice:
                 chosen_unit, chosen_action = choice.split(".", 1)
                 if chosen_unit in setup_actions and chosen_action in setup_actions[chosen_unit]:
