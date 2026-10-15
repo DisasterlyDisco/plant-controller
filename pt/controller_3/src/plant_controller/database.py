@@ -121,25 +121,30 @@ class DatabaseClient(InfluxDBClient3):
             else:
                 print(f"Invalid selection: {format}. Please choose 1, 2, or 3.")
 
-        query = 'SELECT * FROM /.*/'
-        _logger.debug(f'Executing query for export: {query}')
-        result = self.query(query).to_pandas()
+        tables = self.query('SHOW TABLES').to_pandas()
+        if tables.empty:
+            print("No tables found in the database. Export aborted.")
+            return
 
         print(f"Exporting database as {format.upper()} file, please be patient...")
+        for table in tables['name']:
+            _logger.debug(f"Exporting table: {table}")
+            result = self.query(f'SELECT * FROM "{table}"').to_pandas()
+            if result.empty:
+                _logger.warning(f"No data found in table {table}. Skipping export for this table.")
+                continue
 
-        match format:
-            case '1' | 'csv':
-                export_path = os.path.join(export_dir, 'exported_database.csv')
-                result.to_csv(export_path, index=False)
-            case '2' | 'json':
-                export_path = os.path.join(export_dir, 'exported_database.json')
-                result.to_json(export_path, orient='records', lines=True)
-            case '3' | 'parquet':
-                export_path = os.path.join(export_dir, 'exported_database.parquet')
-                result.to_parquet(export_path, index=False)
+            table_export_path = os.path.join(export_dir, f"{table}.{format}")
+            match format:
+                case '1' | 'csv':
+                    result.to_csv(table_export_path, index=False)
+                case '2' | 'json':
+                    result.to_json(table_export_path, orient='records', lines=True)
+                case '3' | 'parquet':
+                    result.to_parquet(table_export_path, index=False)
 
         clear_screen()
-        print(f"Database exported successfully to {export_path}")
+        print(f"Database exported successfully! All tables have been saved to {export_dir}.")
 
 
 class Database:
