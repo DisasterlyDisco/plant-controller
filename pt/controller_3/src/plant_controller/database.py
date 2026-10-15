@@ -126,7 +126,7 @@ class DatabaseClient(InfluxDBClient3):
             print("No tables found in the database. Export aborted.")
             return
         
-        _logger.debug(f"Found tables: {tables['table_name'].tolist()}")
+        _logger.debug(f"Found tables: {tables}")
 
         print(f"Exporting database as {format.upper()} file, please be patient...")
         for table in tables['table_name']:
