@@ -81,7 +81,7 @@ class DatabaseClient(InfluxDBClient3):
 
     def interactive_export_database(self):
         """Export the entire database to a file interactively."""
-        from cli_helpers import CANCELLATION_KEYWORDS, clear_screen
+        from .cli_helpers import CANCELLATION_KEYWORDS, clear_screen
 
         clear_screen()
 
