@@ -2,6 +2,7 @@
 
 import os
 
+CANCELLATION_KEYWORDS = ['exit', 'cancel', 'quit']
 
 def clear_screen():
     """Clear the terminal screen (cross-platform)."""
