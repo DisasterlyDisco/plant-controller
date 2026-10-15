@@ -108,23 +108,25 @@ class DatabaseClient(InfluxDBClient3):
 
         while(1):
             print("Select the export format:")
-            print("1. CSV")
-            print("2. JSON")
-            print("3. Parquet")
+            print("CSV")
+            print("JSON")
+            print("Parquet")
             format = input().lower()
             clear_screen()
-            if format in ['1', 'csv', '2', 'json', '3', 'parquet']:
+            if format in ['csv', 'json', 'parquet']:
                 break
             elif format in CANCELLATION_KEYWORDS:
                 print("Export cancelled.")
                 return
             else:
-                print(f"Invalid selection: {format}. Please choose 1, 2, or 3.")
+                print(f"Invalid selection: {format}. Please choose CSV, JSON, or Parquet.")
 
         tables = self.query('SHOW TABLES').to_pandas()
         if tables.empty:
             print("No tables found in the database. Export aborted.")
             return
+        
+        _logger.debug(f"Found tables: {tables['table_name'].tolist()}")
 
         print(f"Exporting database as {format.upper()} file, please be patient...")
         for table in tables['table_name']:
@@ -136,11 +138,11 @@ class DatabaseClient(InfluxDBClient3):
 
             table_export_path = os.path.join(export_dir, f"{table}.{format}")
             match format:
-                case '1' | 'csv':
+                case 'csv':
                     result.to_csv(table_export_path, index=False)
-                case '2' | 'json':
+                case 'json':
                     result.to_json(table_export_path, orient='records', lines=True)
-                case '3' | 'parquet':
+                case 'parquet':
                     result.to_parquet(table_export_path, index=False)
 
         clear_screen()
