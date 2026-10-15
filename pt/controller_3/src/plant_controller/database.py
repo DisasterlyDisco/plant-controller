@@ -133,7 +133,7 @@ class DatabaseClient(InfluxDBClient3):
             if table["table_schema"] != "iox":
                 break  # Only export tables from the 'iox' schema, as these are the ones created by the plant controller
             table_name = table["table_name"]
-            _logger.debug(f"Exporting table: {table_name}")
+            print(f"Exporting table: {table_name}...", end="", flush=True)
             result = self.query(f'SELECT * FROM "{table_name}"').to_pandas()
             if result.empty:
                 _logger.warning(f"No data found in table {table_name}. Skipping export for this table.")
@@ -147,6 +147,7 @@ class DatabaseClient(InfluxDBClient3):
                     result.to_json(table_export_path, orient='records', lines=True)
                 case 'parquet':
                     result.to_parquet(table_export_path, index=False)
+            print("Done!")
 
         clear_screen()
         print(f"Database exported successfully! All tables have been saved to {export_dir}.")
